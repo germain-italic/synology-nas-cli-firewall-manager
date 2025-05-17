@@ -190,7 +190,6 @@ show_menu() {
     echo -e "${YELLOW}=== $TITLE_SETTINGS ===${NC}"
     echo -e "${GREEN}u/U.${NC} $MENU_UPDATE_SCRIPTS"
     echo -e "${GREEN}l/L.${NC} $MENU_CHANGE_LANGUAGE"
-    echo
     echo -e "${RED}q/Q.${NC} $MENU_EXIT"
     echo
     echo -n "$MANAGE_ENTER_CHOICE: "
