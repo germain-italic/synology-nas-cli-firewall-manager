@@ -42,20 +42,20 @@ fi
 PROFILE_NAME=$(grep -o '"profile"[[:space:]]*:[[:space:]]*"[^"]*"' "$SETTINGS_FILE" | sed -E 's/"profile"[[:space:]]*:[[:space:]]*"([^"]*)"/\1/')
 echo "Profil actif: $PROFILE_NAME"
 
-# Trouver le fichier de profil
-if [ "$PROFILE_NAME" = "default" ]; then
-    PROFILE_FILE="$FIREWALL_DIR/1.json"
-elif [ "$PROFILE_NAME" = "custom" ] && [ -f "$FIREWALL_DIR/2.json" ]; then
-    PROFILE_FILE="$FIREWALL_DIR/2.json"
-else
-    # Rechercher le fichier avec le nom du profil
-    for f in "$FIREWALL_DIR"/*.json; do
-        if [ "$f" != "$SETTINGS_FILE" ] && grep -q "\"name\"[[:space:]]*:[[:space:]]*\"$PROFILE_NAME\"" "$f"; then
-            PROFILE_FILE="$f"
-            break
-        fi
-    done
-fi
+# Trouver le fichier de profil contenant le nom du profil actif
+PROFILE_FILE=""
+for f in "$FIREWALL_DIR"/*.json; do
+    # Ignorer le fichier de settings et les backups
+    if [ "$f" = "$SETTINGS_FILE" ] || [[ "$f" == *".backup."* ]]; then
+        continue
+    fi
+    
+    # Vérifier si ce fichier contient le nom du profil actif
+    if grep -q "\"name\"[[:space:]]*:[[:space:]]*\"$PROFILE_NAME\"" "$f"; then
+        PROFILE_FILE="$f"
+        break
+    fi
+done
 
 if [ -z "$PROFILE_FILE" ] || [ ! -f "$PROFILE_FILE" ]; then
     echo "Erreur: Fichier de profil introuvable"
