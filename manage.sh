@@ -1,61 +1,96 @@
 #!/bin/bash
 
-# manage.sh - Interface CLI pour la gestion du firewall Synology
-# Ce script sert de page d'accueil pour tous les scripts de gestion du firewall
+# manage.sh - CLI interface for Synology firewall management
+# This script serves as a homepage for all firewall management scripts
 
-# Couleurs pour améliorer la lisibilité
+# Colors for better readability
 BLUE='\033[0;34m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 RED='\033[0;31m'
 NC='\033[0m' # No Color
 
-# Chemin du répertoire contenant les scripts
+# Path to the directory containing the scripts
 SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
 
-# Fonction pour afficher l'en-tête
+# Load the configuration
+if [ -f "$SCRIPT_DIR/config.sh" ]; then
+    source "$SCRIPT_DIR/config.sh"
+else
+    # Default language if config doesn't exist
+    LANG="en"
+    # Create a default config file
+    echo '#!/bin/bash
+# Configuration file
+
+# Language setting (fr or en)
+LANG="en"
+
+# Other configuration parameters can go here
+' > "$SCRIPT_DIR/config.sh"
+    chmod +x "$SCRIPT_DIR/config.sh"
+fi
+
+# Load the appropriate language file
+if [ "$LANG" = "en" ]; then
+    if [ -f "$SCRIPT_DIR/lang/en.sh" ]; then
+        source "$SCRIPT_DIR/lang/en.sh"
+    else
+        echo "Error: English language file not found."
+        exit 1
+    fi
+else
+    if [ -f "$SCRIPT_DIR/lang/fr.sh" ]; then
+        source "$SCRIPT_DIR/lang/fr.sh"
+    else
+        echo "Erreur: Fichier de langue français introuvable."
+        exit 1
+    fi
+fi
+
+# Function to display the header
 show_header() {
     clear
     echo -e "${BLUE}=================================================================${NC}"
-    echo -e "${BLUE}          GESTIONNAIRE DE FIREWALL SYNOLOGY DSM                  ${NC}"
+    echo -e "${BLUE}          $TITLE_MAIN                  ${NC}"
     echo -e "${BLUE}=================================================================${NC}"
     echo
 }
 
-# Fonction pour afficher le statut actuel du firewall
+# Function to display the current firewall status
 show_firewall_status() {
-    echo -e "${YELLOW}=== STATUT ACTUEL DU FIREWALL ===${NC}"
+    echo -e "${YELLOW}=== $TITLE_CURRENT_STATUS ===${NC}"
     
-    # Vérifier si le firewall est activé - méthode améliorée
+    # Check if the firewall is enabled - improved method
     if sudo iptables -S | grep -q "INPUT_FIREWALL\|FORWARD_FIREWALL"; then
-        echo -e "État du firewall: ${GREEN}ACTIVÉ${NC}"
+        echo -e "${STATUS_ACTIVE_PROFILE}: ${GREEN}${STATUS_ENABLED}${NC}"
     else
-        echo -e "État du firewall: ${RED}DÉSACTIVÉ${NC}"
+        echo -e "${STATUS_ACTIVE_PROFILE}: ${RED}${STATUS_DISABLED}${NC}"
     fi
     
-    # Vérifier le statut dans le fichier de configuration
+    # Check the status in the configuration file
     FIREWALL_DIR="/usr/syno/etc/firewall.d"
     SETTINGS_FILE="$FIREWALL_DIR/firewall_settings.json"
     
     if [ -f "$SETTINGS_FILE" ]; then
         if grep -q '"status"[[:space:]]*:[[:space:]]*true' "$SETTINGS_FILE"; then
-            echo -e "État dans la configuration: ${GREEN}ACTIVÉ${NC}"
+            echo -e "${STATUS_CONFIG_STATE}: ${GREEN}${STATUS_ENABLED}${NC}"
         else
-            echo -e "État dans la configuration: ${RED}DÉSACTIVÉ${NC}"
+            echo -e "${STATUS_CONFIG_STATE}: ${RED}${STATUS_DISABLED}${NC}"
         fi
         
         PROFILE_NAME=$(grep -o '"profile"[[:space:]]*:[[:space:]]*"[^"]*"' "$SETTINGS_FILE" | sed -E 's/"profile"[[:space:]]*:[[:space:]]*"([^"]*)"/\1/')
-        echo -e "Profil actif: ${GREEN}$PROFILE_NAME${NC}"
+        echo -e "${STATUS_ACTIVE_PROFILE}: ${GREEN}$PROFILE_NAME${NC}"
         
-        # Trouver le nombre de règles
+        # Find the number of rules
         PROFILE_FILE=""
         for f in "$FIREWALL_DIR"/*.json; do
-            # Ignorer le fichier de settings et les backups
+            # Ignore settings file and backups
             if [ "$f" = "$SETTINGS_FILE" ] || [[ "$f" == *".backup."* ]]; then
                 continue
             fi
             
-            # Vérifier si ce fichier contient le nom du profil actif
+            # Check if this file contains the active profile name
             if grep -q "\"name\"[[:space:]]*:[[:space:]]*\"$PROFILE_NAME\"" "$f"; then
                 PROFILE_FILE="$f"
                 break
@@ -66,78 +101,108 @@ show_firewall_status() {
             RULE_COUNT=$(jq '.rules.global | length' "$PROFILE_FILE")
             ALLOW_COUNT=$(jq '.rules.global | map(select(.policy == 0)) | length' "$PROFILE_FILE" 2>/dev/null || echo "?")
             DENY_COUNT=$(jq '.rules.global | map(select(.policy == 1)) | length' "$PROFILE_FILE" 2>/dev/null || echo "?")
-            echo -e "Nombre de règles: ${GREEN}$RULE_COUNT${NC} (${GREEN}$ALLOW_COUNT${NC} autorisations, ${RED}$DENY_COUNT${NC} refus)"
+            echo -e "${STATUS_RULE_COUNT}: ${GREEN}$RULE_COUNT${NC} (${GREEN}$ALLOW_COUNT${NC} ${STATUS_ALLOW}, ${RED}$DENY_COUNT${NC} ${STATUS_DENY})"
         else
-            echo -e "Nombre de règles: ${YELLOW}Inconnu (jq non disponible)${NC}"
+            echo -e "${STATUS_RULE_COUNT}: ${YELLOW}${STATUS_UNKNOWN}${NC}"
         fi
     else
-        echo -e "Profil actif: ${RED}Introuvable${NC}"
+        echo -e "${STATUS_ACTIVE_PROFILE}: ${RED}${STATUS_NOT_FOUND}${NC}"
     fi
     
-    # Afficher le nombre d'IPs autorisées dans iptables
+    # Display the number of IPs allowed in iptables
     IP_COUNT=$(sudo iptables -S INPUT_FIREWALL | grep -c " -s .* -j RETURN")
-    echo -e "IPs autorisées dans iptables: ${GREEN}$IP_COUNT${NC}"
+    echo -e "${STATUS_IPS_IN_IPTABLES}: ${GREEN}$IP_COUNT${NC}"
     
     echo
 }
 
-# Fonction pour vérifier que tous les scripts requis sont présents
+# Function to check that all required scripts are present
 check_required_scripts() {
     local missing=0
     local required_scripts=("list_firewall_rules.sh" "add_firewall_ip.sh" "remove_firewall_ip.sh" "update_firewall_rule_name.sh" "update_hostname_ip.sh")
     
     for script in "${required_scripts[@]}"; do
         if [ ! -f "$SCRIPT_DIR/$script" ]; then
-            echo -e "${RED}ERREUR: Le script $script est manquant!${NC}"
+            echo -e "${RED}$(printf "$MANAGE_ERROR_MISSING" "$script")${NC}"
             missing=1
         elif [ ! -x "$SCRIPT_DIR/$script" ]; then
-            echo -e "${YELLOW}ATTENTION: Le script $script n'est pas exécutable. Correction automatique...${NC}"
+            echo -e "${YELLOW}$(printf "$MANAGE_WARNING_EXEC" "$script")${NC}"
             chmod +x "$SCRIPT_DIR/$script"
         fi
     done
     
     if [ $missing -eq 1 ]; then
-        echo -e "${RED}Certains scripts nécessaires sont manquants. Vérifiez votre installation.${NC}"
+        echo -e "${RED}$MANAGE_ERROR_REQUIRED${NC}"
         echo
-        echo -e "Appuyez sur Entrée pour continuer..."
+        echo -e "$MSG_CONTINUE"
         read
     fi
 }
 
-# Fonction principale pour afficher le menu
+# Function to change the language
+change_language() {
+    echo
+    echo -e "${YELLOW}$(printf "$MANAGE_CURRENT_LANGUAGE" "$LANG")${NC}"
+    echo -e "1. $MANAGE_ENGLISH"
+    echo -e "2. $MANAGE_FRENCH"
+    echo
+    read -p "$MANAGE_CHOOSE_LANGUAGE " lang_choice
+    
+    case "$lang_choice" in
+        1)
+            sed -i 's/LANG=.*/LANG="en"/' "$SCRIPT_DIR/config.sh"
+            echo "$MANAGE_LANG_ENGLISH"
+            ;;
+        2)
+            sed -i 's/LANG=.*/LANG="fr"/' "$SCRIPT_DIR/config.sh"
+            echo "$MANAGE_LANG_FRENCH"
+            ;;
+        *)
+            echo "$MANAGE_INVALID_LANG"
+            sleep 1
+            return
+            ;;
+    esac
+    
+    sleep 1
+    exec "$0"  # Restart the script
+}
+
+# Main function to display the menu
 show_menu() {
     show_header
     show_firewall_status
     
-    echo -e "${YELLOW}=== ACTIONS DISPONIBLES ===${NC}"
-    echo -e "${GREEN}1.${NC} Lister les règles du firewall"
-    echo -e "${GREEN}2.${NC} Ajouter une IP à la whitelist"
-    echo -e "${GREEN}3.${NC} Supprimer une règle (par nom ou IP)"
-    echo -e "${GREEN}4.${NC} Mettre à jour le nom d'une règle"
-    echo -e "${GREEN}5.${NC} Mettre à jour l'IP d'un hostname (DDNS)"
+    echo -e "${YELLOW}=== $TITLE_AVAILABLE_ACTIONS ===${NC}"
+    echo -e "${GREEN}1.${NC} $MENU_LIST_RULES"
+    echo -e "${GREEN}2.${NC} $MENU_ADD_IP"
+    echo -e "${GREEN}3.${NC} $MENU_REMOVE_RULE"
+    echo -e "${GREEN}4.${NC} $MENU_UPDATE_NAME"
+    echo -e "${GREEN}5.${NC} $MENU_UPDATE_HOSTNAME"
     echo
-    echo -e "${YELLOW}=== ACTIONS AVANCÉES ===${NC}"
-    echo -e "${GREEN}6.${NC} Afficher toutes les chaînes iptables"
-    echo -e "${GREEN}7.${NC} Activer/Désactiver le firewall"
-    echo -e "${GREEN}8.${NC} Recharger la configuration du firewall"
-    echo -e "${GREEN}9.${NC} Nettoyer les fichiers de sauvegarde"
-    echo -e "${GREEN}10.${NC} Mettre à jour les scripts (git pull)"
+    echo -e "${YELLOW}=== $TITLE_ADVANCED_ACTIONS ===${NC}"
+    echo -e "${GREEN}6.${NC} $MENU_SHOW_IPTABLES"
+    echo -e "${GREEN}7.${NC} $MENU_TOGGLE_FIREWALL"
+    echo -e "${GREEN}8.${NC} $MENU_RELOAD_CONFIG"
+    echo -e "${GREEN}9.${NC} $MENU_CLEAN_BACKUPS"
+    echo -e "${GREEN}10.${NC} $MENU_UPDATE_SCRIPTS"
+    echo -e "${GREEN}11.${NC} $MENU_CHANGE_LANGUAGE"
     echo
-    echo -e "${RED}q/Q.${NC} Quitter"
+    echo -e "${RED}q/Q.${NC} $MENU_EXIT"
     echo
-    echo -n "Votre choix: "
+    echo -n "$MANAGE_ENTER_CHOICE: "
 }
 
-# Fonction pour lister les règles du firewall
+# Function to list firewall rules
 list_firewall_rules() {
     "$SCRIPT_DIR/list_firewall_rules.sh"
 }
 
-# Fonction pour ajouter une IP à la whitelist
+# Function to add an IP to the whitelist
 add_ip() {
     echo
-    read -p "Entrez l'adresse IP à ajouter: " ip
-    read -p "Entrez un nom pour cette règle (ou laissez vide pour utiliser l'IP): " name
+    read -p "$MANAGE_ENTER_IP " ip
+    read -p "$MANAGE_ENTER_NAME " name
     
     if [ -z "$name" ]; then
         "$SCRIPT_DIR/add_firewall_ip.sh" "$ip"
@@ -146,27 +211,27 @@ add_ip() {
     fi
 }
 
-# Fonction pour supprimer une règle
+# Function to remove a rule
 remove_rule() {
     echo
-    read -p "Entrez le nom de la règle ou l'IP à supprimer: " rule
+    read -p "$MANAGE_ENTER_REMOVE " rule
     
     "$SCRIPT_DIR/remove_firewall_ip.sh" "$rule"
 }
 
-# Fonction pour mettre à jour le nom d'une règle
+# Function to update the name of a rule
 update_rule_name() {
     echo
-    read -p "Entrez l'adresse IP dont vous voulez modifier le nom: " ip
-    read -p "Entrez le nouveau nom pour cette règle: " name
+    read -p "$MANAGE_ENTER_IP_UPDATE " ip
+    read -p "$MANAGE_ENTER_NEW_NAME " name
     
     "$SCRIPT_DIR/update_firewall_rule_name.sh" "$ip" "$name"
 }
 
-# Fonction pour mettre à jour l'IP d'un hostname
+# Function to update the IP of a hostname
 update_hostname() {
     echo
-    read -p "Entrez le hostname à mettre à jour (ou laissez vide pour défaut): " hostname
+    read -p "$MANAGE_ENTER_HOSTNAME " hostname
     
     if [ -z "$hostname" ]; then
         "$SCRIPT_DIR/update_hostname_ip.sh"
@@ -175,78 +240,78 @@ update_hostname() {
     fi
 }
 
-# Fonction pour afficher toutes les chaînes iptables
+# Function to display all iptables chains
 show_iptables() {
     echo
-    echo -e "${YELLOW}=== RÈGLES IPTABLES ACTUELLES ===${NC}"
+    echo -e "${YELLOW}=== $MENU_SHOW_IPTABLES ===${NC}"
     sudo iptables -L -v
     echo
-    echo -e "Appuyez sur Entrée pour continuer..."
+    echo -e "$MSG_CONTINUE"
     read
 }
 
-# Fonction pour activer/désactiver le firewall
+# Function to enable/disable the firewall
 toggle_firewall() {
     echo
     if sudo iptables -S | grep -q "INPUT_FIREWALL\|FORWARD_FIREWALL"; then
-        echo -e "${YELLOW}Le firewall est actuellement ACTIVÉ. Voulez-vous le désactiver? (o/N)${NC}"
+        echo -e "${YELLOW}$MANAGE_FW_ENABLED${NC}"
         read -p "" confirm
-        if [[ "$confirm" =~ ^[oO][uU]?[iI]?$ ]]; then
+        if [[ "$confirm" =~ ^[yY][eE]?[sS]?$ ]] || [[ "$confirm" =~ ^[oO][uU]?[iI]?$ ]]; then
             sudo /usr/syno/bin/synofirewall --disable
-            echo -e "${GREEN}Le firewall a été désactivé.${NC}"
+            echo -e "${GREEN}$MANAGE_FW_ENABLED_OK${NC}"
         fi
     else
-        echo -e "${YELLOW}Le firewall est actuellement DÉSACTIVÉ. Voulez-vous l'activer? (o/N)${NC}"
+        echo -e "${YELLOW}$MANAGE_FW_DISABLED${NC}"
         read -p "" confirm
-        if [[ "$confirm" =~ ^[oO][uU]?[iI]?$ ]]; then
+        if [[ "$confirm" =~ ^[yY][eE]?[sS]?$ ]] || [[ "$confirm" =~ ^[oO][uU]?[iI]?$ ]]; then
             sudo /usr/syno/bin/synofirewall --enable
-            echo -e "${GREEN}Le firewall a été activé.${NC}"
+            echo -e "${GREEN}$MANAGE_FW_DISABLED_OK${NC}"
         fi
     fi
     
     echo
-    echo -e "Appuyez sur Entrée pour continuer..."
+    echo -e "$MSG_CONTINUE"
     read
 }
 
-# Fonction pour recharger la configuration du firewall
+# Function to reload the firewall configuration
 reload_firewall() {
     echo
-    echo -e "${YELLOW}Rechargement de la configuration du firewall...${NC}"
+    echo -e "${YELLOW}$MANAGE_RELOAD_FW${NC}"
     sudo /usr/syno/bin/synofirewall --reload
-    echo -e "${GREEN}Configuration rechargée.${NC}"
+    echo -e "${GREEN}$MANAGE_RELOAD_COMPLETE${NC}"
     echo
-    echo -e "Appuyez sur Entrée pour continuer..."
+    echo -e "$MSG_CONTINUE"
     read
 }
 
-# Fonction pour nettoyer les fichiers de sauvegarde
+# Function to clean up backup files
 clean_backups() {
     echo
-    echo -e "${YELLOW}Fichiers de sauvegarde dans /usr/syno/etc/firewall.d/:${NC}"
+    echo -e "${YELLOW}$MANAGE_BACKUP_FILES${NC}"
     ls -la /usr/syno/etc/firewall.d/*.backup.* 2>/dev/null
     echo
-    echo -e "${YELLOW}Voulez-vous supprimer tous ces fichiers de sauvegarde? (o/N)${NC}"
+    echo -e "${YELLOW}$MANAGE_DELETE_BACKUP${NC}"
     read -p "" confirm
-    if [[ "$confirm" =~ ^[oO][uU]?[iI]?$ ]]; then
+    if [[ "$confirm" =~ ^[yY][eE]?[sS]?$ ]] || [[ "$confirm" =~ ^[oO][uU]?[iI]?$ ]]; then
         sudo rm -f /usr/syno/etc/firewall.d/*.backup.*
-        echo -e "${GREEN}Fichiers de sauvegarde supprimés.${NC}"
+        echo -e "${GREEN}$MANAGE_BACKUP_DELETED${NC}"
     fi
     
     echo
-    echo -e "Appuyez sur Entrée pour continuer..."
+    echo -e "$MSG_CONTINUE"
     read
 }
 
-# Fonction pour mettre à jour les scripts via git pull
+# Function to update scripts via git pull
 update_scripts() {
     echo
-    echo -e "${YELLOW}=== MISE À JOUR DES SCRIPTS ===${NC}"
+    echo -e "${YELLOW}=== $MENU_UPDATE_SCRIPTS ===${NC}"
     
     if ! command -v git &> /dev/null; then
-        echo -e "${RED}Git n'est pas installé ou n'est pas dans le PATH.${NC}"
+        echo -e "${RED}$MANAGE_GIT_ERROR${NC}"
         echo
-        read -p "Appuyez sur Entrée pour continuer..."
+        read -p "$MSG_CONTINUE"
         return
     fi
 
@@ -254,90 +319,90 @@ update_scripts() {
     cd "$SCRIPT_DIR" || return
 
     if git rev-parse --is-inside-work-tree &> /dev/null; then
-        echo -e "Répertoire de scripts: ${GREEN}$SCRIPT_DIR${NC}"
+        echo -e "$MANAGE_SCRIPTS_DIR: ${GREEN}$SCRIPT_DIR${NC}"
         
-        # Vérifie si c'est un sous-module (fichier .git est un lien vers ../../.git/modules/...)
+        # Check if it's a submodule (git file is a link to ../../.git/modules/...)
         if [ -f .git ] && grep -q "gitdir:" .git; then
-            echo -e "🔗 Détection d'un sous-module Git. Utilisation de 'git pull origin main'..."
+            echo -e "$MANAGE_GIT_SUBMODULE_DETECTED"
             if git pull origin main; then
-                echo -e "${GREEN}Sous-module mis à jour avec succès!${NC}"
+                echo -e "${GREEN}$MANAGE_SUBMODULE_UPDATED${NC}"
             else
-                echo -e "${RED}Échec de la mise à jour du sous-module.${NC}"
+                echo -e "${RED}$MANAGE_SUBMODULE_FAILED${NC}"
             fi
         else
-            echo -e "📦 Dépôt standalone. Utilisation de 'git pull'..."
+            echo -e "$MANAGE_GIT_STANDALONE"
             if git pull; then
-                echo -e "${GREEN}Scripts mis à jour avec succès!${NC}"
+                echo -e "${GREEN}$MANAGE_UPDATE_SUCCESS${NC}"
             else
-                echo -e "${RED}Erreur lors de la mise à jour des scripts.${NC}"
+                echo -e "${RED}$MANAGE_UPDATE_ERROR${NC}"
             fi
         fi
 
-        echo -e "Mise à jour des permissions..."
+        echo -e "$MANAGE_UPDATE_PERMS"
         chmod +x *.sh
-        echo -e "${GREEN}Permissions mises à jour.${NC}"
+        echo -e "${GREEN}$MANAGE_PERMS_UPDATED${NC}"
 
         cd "$CURRENT_DIR"
         echo
-        read -p "Appuyez sur Entrée pour redémarrer le script..."
+        read -p "$MSG_CONTINUE" 
         exec "$SCRIPT_DIR/manage.sh"
     else
-        echo -e "${RED}Le répertoire n'est pas un dépôt git valide.${NC}"
+        echo -e "${RED}$MANAGE_GIT_INVALID${NC}"
         echo
-        git status 2>&1 || echo -e "${RED}Impossible d'obtenir le statut git.${NC}"
-        echo -e "${YELLOW}Mettez à jour les scripts manuellement si nécessaire.${NC}"
+        git status 2>&1 || echo -e "${RED}$MANAGE_GIT_STATUS_ERROR${NC}"
+        echo -e "${YELLOW}$MANAGE_MANUAL_UPDATE${NC}"
     fi
 
     cd "$CURRENT_DIR"
     echo
-    read -p "Appuyez sur Entrée pour continuer..."
+    read -p "$MSG_CONTINUE"
 }
 
-# Vérifier les scripts requis
+# Check required scripts
 check_required_scripts
 
-# Boucle principale
+# Main loop
 while true; do
     show_menu
     read choice
     
     case "$choice" in
         q|Q)
-            echo -e "${GREEN}Au revoir!${NC}"
+            echo -e "${GREEN}$MANAGE_GOODBYE${NC}"
             exit 0
             ;;
         0)
-            echo -e "${GREEN}Au revoir!${NC}"
+            echo -e "${GREEN}$MANAGE_GOODBYE${NC}"
             exit 0
             ;;
         1)
             list_firewall_rules
             echo
-            echo -e "Appuyez sur Entrée pour continuer..."
+            echo -e "$MSG_CONTINUE"
             read
             ;;
         2)
             add_ip
             echo
-            echo -e "Appuyez sur Entrée pour continuer..."
+            echo -e "$MSG_CONTINUE"
             read
             ;;
         3)
             remove_rule
             echo
-            echo -e "Appuyez sur Entrée pour continuer..."
+            echo -e "$MSG_CONTINUE"
             read
             ;;
         4)
             update_rule_name
             echo
-            echo -e "Appuyez sur Entrée pour continuer..."
+            echo -e "$MSG_CONTINUE"
             read
             ;;
         5)
             update_hostname
             echo
-            echo -e "Appuyez sur Entrée pour continuer..."
+            echo -e "$MSG_CONTINUE"
             read
             ;;
         6)
@@ -355,8 +420,11 @@ while true; do
         10)
             update_scripts
             ;;
+        11)
+            change_language
+            ;;
         *)
-            echo -e "${RED}Choix invalide. Veuillez réessayer.${NC}"
+            echo -e "${RED}$MANAGE_INVALID_CHOICE${NC}"
             sleep 1
             ;;
     esac
