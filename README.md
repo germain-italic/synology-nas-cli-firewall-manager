@@ -27,8 +27,8 @@ To change the language, you can:
 ## ⚙️ Requirements
 
 - Root SSH access to the NAS
-- `jq` installed (`sudo synogear install jq` or via `ipkg`)
 - DSM 7.x with active firewall configuration
+- `jq` installed (read below)
 
 ## 📦 Installation
 
@@ -43,6 +43,57 @@ git clone git@github.com:germain-italic/synology-nas-cli-firewall-manager.git
 ```bash
 ./manage.sh
 ```
+
+## 📦 Installation of jq
+
+The `jq` command is required for these scripts. Here's how to install it based on your NAS architecture:
+
+### 1. Determine your NAS architecture
+
+```bash
+uname -a
+```
+
+This command will give you information about your system. Note the architecture (x86_64, i686, armv7l, etc.).
+
+### 2. Install jq directly from binary (recommended method)
+
+#### For x86_64 (64-bit) systems:
+```bash
+# Download the 64-bit version
+wget https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64 -O jq
+
+# Make it executable
+chmod +x jq
+
+# Move it to a directory in your PATH
+sudo mv jq /usr/local/bin/
+```
+
+#### For i686/i386 (32-bit) systems:
+```bash
+# Download the 32-bit version
+wget https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux32 -O jq
+
+# Make it executable
+chmod +x jq
+
+# Move it to a directory in your PATH
+sudo mv jq /usr/local/bin/
+```
+
+#### For ARM systems (like DS218j, DS220j, etc.):
+For ARM-based NAS models, you may need to use the Entware or ipkg method mentioned in the project wiki.
+
+### 3. Verify the installation
+
+Regardless of the method used, verify that jq works correctly:
+
+```bash
+jq --version
+```
+
+If this command displays the jq version, the installation was successful.
 
 ## 🧪 Usage
 
