@@ -48,7 +48,7 @@ The easiest way to use these tools is through the main menu interface:
 ./manage.sh
 ```
 
-![Manager GUI](screenshots/q1D882Yzbk.png)
+![Firewall Manager GUI](screenshots/q1D882Yzbk.png)
 
 This interactive menu provides access to all firewall management functions:
 
@@ -137,6 +137,16 @@ You can run `update_hostname_ip.sh` and `rotate_logs_ip.sh` automatically using 
      /volume1/homes/YourUser/scripts/cli-tools/synology/update_hostname_ip.sh
      ```
 6. Repeat steps for `rotate_logs_ip.sh`, if desired.
+
+## Screenshots
+
+- [Task scheduler](screenshots/chrome_WnCAkr6PxU.png)
+- [Update DDNS - General](screenshots/chrome_d9BmIjVpfx.png)
+- [Update DDNS - Schedule](screenshots/chrome_kDxHyPqbSJ.png)
+- [Update DDNS - Task](screenshots/chrome_rvF9eaVECz.png)
+- [Rotate logs - Schedule](screenshots/chrome_8nY67MK55r.png)
+- [Rotate logs - Task](screenshots/chrome_NKUCBflL0W.png)
+- [Firewall Manager GUI](screenshots/q1D882Yzbk.png)
 
 ---
 
