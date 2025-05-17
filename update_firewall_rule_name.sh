@@ -17,18 +17,20 @@ SETTINGS_FILE="$FIREWALL_DIR/firewall_settings.json"
 PROFILE_NAME=$(grep -o '"profile"[[:space:]]*:[[:space:]]*"[^"]*"' "$SETTINGS_FILE" | sed -E 's/.*"([^"]*)"/\1/')
 echo "Profil actif : $PROFILE_NAME"
 
-if [ "$PROFILE_NAME" = "default" ]; then
-  PROFILE_FILE="$FIREWALL_DIR/1.json"
-elif [ "$PROFILE_NAME" = "custom" ] && [ -f "$FIREWALL_DIR/2.json" ]; then
-  PROFILE_FILE="$FIREWALL_DIR/2.json"
-else
-  for f in "$FIREWALL_DIR"/*.json; do
-    if [ "$f" != "$SETTINGS_FILE" ] && grep -q "\"name\"[[:space:]]*:[[:space:]]*\"$PROFILE_NAME\"" "$f"; then
-      PROFILE_FILE="$f"
-      break
+# Trouver le fichier de profil contenant le nom du profil actif
+PROFILE_FILE=""
+for f in "$FIREWALL_DIR"/*.json; do
+    # Ignorer le fichier de settings et les backups
+    if [ "$f" = "$SETTINGS_FILE" ] || [[ "$f" == *".backup."* ]]; then
+        continue
     fi
-  done
-fi
+    
+    # Vérifier si ce fichier contient le nom du profil actif
+    if grep -q "\"name\"[[:space:]]*:[[:space:]]*\"$PROFILE_NAME\"" "$f"; then
+        PROFILE_FILE="$f"
+        break
+    fi
+done
 
 if [ ! -f "$PROFILE_FILE" ]; then
     echo "Erreur : Fichier de profil introuvable"
