@@ -243,16 +243,25 @@ update_scripts() {
     echo
     echo -e "${YELLOW}=== MISE À JOUR DES SCRIPTS ===${NC}"
     
-    # Vérifier si le répertoire est un dépôt git
-    if [ -d "$SCRIPT_DIR/.git" ]; then
+    # Vérifier si git est disponible
+    if ! command -v git &> /dev/null; then
+        echo -e "${RED}Git n'est pas installé ou n'est pas dans le PATH.${NC}"
+        echo
+        echo -e "Appuyez sur Entrée pour continuer..."
+        read
+        return
+    fi
+    
+    # Sauvegarde du répertoire courant
+    CURRENT_DIR=$(pwd)
+    
+    # Aller dans le répertoire des scripts
+    cd "$SCRIPT_DIR"
+    
+    # Vérifier si le répertoire est un dépôt git (méthode plus fiable)
+    if git rev-parse --is-inside-work-tree &> /dev/null; then
         echo -e "Répertoire de scripts: ${GREEN}$SCRIPT_DIR${NC}"
         echo -e "Exécution de 'git pull' pour mettre à jour les scripts..."
-        
-        # Sauvegarde du répertoire courant
-        CURRENT_DIR=$(pwd)
-        
-        # Aller dans le répertoire des scripts
-        cd "$SCRIPT_DIR"
         
         # Exécuter git pull
         if git pull; then
@@ -265,14 +274,16 @@ update_scripts() {
         else
             echo -e "${RED}Erreur lors de la mise à jour des scripts.${NC}"
         fi
-        
-        # Retourner au répertoire d'origine
-        cd "$CURRENT_DIR"
     else
-        echo -e "${RED}Le répertoire n'est pas un dépôt git.${NC}"
+        echo -e "${RED}Le répertoire n'est pas un dépôt git valide.${NC}"
+        echo -e "${YELLOW}État de git dans ce répertoire:${NC}"
+        git status 2>&1 || echo -e "${RED}Impossible d'obtenir le statut git.${NC}"
         echo -e "${YELLOW}Pour utiliser cette fonction, le répertoire contenant les scripts doit être cloné depuis un dépôt git.${NC}"
         echo -e "${YELLOW}Si ce n'est pas le cas, vous devrez mettre à jour les scripts manuellement.${NC}"
     fi
+    
+    # Retourner au répertoire d'origine
+    cd "$CURRENT_DIR"
     
     echo
     echo -e "Appuyez sur Entrée pour continuer..."
