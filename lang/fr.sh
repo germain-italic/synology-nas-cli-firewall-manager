@@ -12,6 +12,8 @@ TITLE_MAIN="GESTIONNAIRE DE FIREWALL SYNOLOGY DSM"
 TITLE_CURRENT_STATUS="STATUT ACTUEL DU FIREWALL"
 TITLE_AVAILABLE_ACTIONS="ACTIONS DISPONIBLES"
 TITLE_ADVANCED_ACTIONS="ACTIONS AVANCÉES"
+TITLE_SETTINGS="PARAMÈTRES"
+# Titre de la liste des règles
 
 # Options de menu
 MENU_LIST_RULES="Lister les règles du firewall"
@@ -23,7 +25,7 @@ MENU_SHOW_IPTABLES="Afficher toutes les chaînes iptables"
 MENU_TOGGLE_FIREWALL="Activer/Désactiver le firewall"
 MENU_RELOAD_CONFIG="Recharger la configuration du firewall"
 MENU_CLEAN_BACKUPS="Nettoyer les fichiers de sauvegarde"
-MENU_UPDATE_SCRIPTS="Mettre à jour les scripts (git pull)"
+MENU_UPDATE_SCRIPTS="Mettre à jour (git pull)"
 MENU_CHANGE_LANGUAGE="Changer de langue"
 MENU_EXIT="Quitter"
 
