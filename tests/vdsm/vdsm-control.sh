@@ -21,6 +21,7 @@ print_menu() {
   echo "9) Enable home directories on DSM (via API)"
   echo "10) Send SSH public key to DSM (via ssh-copy-id)"
   echo "11) Connect to DSM via SSH"
+  echo "12) Install jq on DSM via SSH"
   echo "0) Exit"
   echo ""
   read -p "Choose an option: " CHOICE
@@ -28,6 +29,10 @@ print_menu() {
 
 handle_choice() {
   case $CHOICE in
+    0)
+      echo "👋 Exiting."
+      exit 0
+      ;;
     1)
       echo "▶️ Starting DSM..."
       docker-compose up -d
@@ -83,11 +88,6 @@ handle_choice() {
         echo "⚠️ Script enable-homes.sh not found or not executable."
       fi
       ;;
-    0)
-      echo "👋 Exiting."
-      exit 0
-      ;;
-
     10)
       ENV_FILE=".env"
       if [[ -f "$ENV_FILE" ]]; then
@@ -128,6 +128,15 @@ handle_choice() {
       else
         echo "📡 Connecting via SSH to $DSM_USER@$DSM_IP ..."
         ssh "$DSM_USER@$DSM_IP"
+      fi
+      ;;
+
+    12)
+      if [ -x ./install-jq-on-nas.sh ]; then
+        echo "🛰 Running install-jq-on-nas.sh..."
+        ./install-jq-on-nas.sh
+      else
+        echo "⚠️ Script install-jq-on-nas.sh not found or not executable."
       fi
       ;;
 
