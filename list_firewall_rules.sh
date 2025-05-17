@@ -7,18 +7,24 @@ SETTINGS_FILE="$FIREWALL_DIR/firewall_settings.json"
 PROFILE_NAME=$(grep -o '"profile"[[:space:]]*:[[:space:]]*"[^"]*"' "$SETTINGS_FILE" | sed -E 's/"profile"[[:space:]]*:[[:space:]]*"([^"]*)"/\1/')
 echo "Profil actif: $PROFILE_NAME"
 
-# Trouver le fichier de profil
-if [ "$PROFILE_NAME" = "default" ]; then
-    PROFILE_FILE="$FIREWALL_DIR/1.json"
-elif [ "$PROFILE_NAME" = "custom" ] && [ -f "$FIREWALL_DIR/2.json" ]; then
-    PROFILE_FILE="$FIREWALL_DIR/2.json"
-else
-    for f in "$FIREWALL_DIR"/*.json; do
-        if [ "$f" != "$SETTINGS_FILE" ] && grep -q "\"name\"[[:space:]]*:[[:space:]]*\"$PROFILE_NAME\"" "$f"; then
-            PROFILE_FILE="$f"
-            break
-        fi
-    done
+# Trouver le fichier de profil contenant le nom du profil actif
+PROFILE_FILE=""
+for f in "$FIREWALL_DIR"/*.json; do
+    # Ignorer le fichier de settings
+    if [ "$f" = "$SETTINGS_FILE" ] || [[ "$f" == *".backup."* ]]; then
+        continue
+    fi
+    
+    # Vérifier si ce fichier contient le nom du profil actif
+    if grep -q "\"name\"[[:space:]]*:[[:space:]]*\"$PROFILE_NAME\"" "$f"; then
+        PROFILE_FILE="$f"
+        break
+    fi
+done
+
+if [ -z "$PROFILE_FILE" ]; then
+    echo "Aucun fichier de profil trouvé pour le profil '$PROFILE_NAME'"
+    exit 1
 fi
 
 echo "Fichier de profil: $PROFILE_FILE"
@@ -37,6 +43,10 @@ if command -v jq >/dev/null 2>&1; then
     done
 else
     echo "jq n'est pas disponible, impossible d'afficher les règles"
+    
+    # Alternative simple si jq n'est pas disponible
+    echo "Contenu brut des règles IP:"
+    grep -A 20 '"ipList"' "$PROFILE_FILE" | grep -B 20 '"table"' | sed 's/^/  /'
 fi
 
 echo "---------------------------------------------------------------------------------------------"
