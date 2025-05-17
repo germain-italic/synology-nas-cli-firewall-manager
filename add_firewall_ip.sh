@@ -44,10 +44,19 @@ else
 fi
 
 # Check IP format (basic validation)
-if ! [[ $IP_TO_ADD =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]]; then
+if ! [[ $IP_TO_ADD =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}$ ]]; then
     echo "$ADD_INVALID_IP"
     exit 1
 fi
+
+# Ensure each octet is within the valid range (0-255)
+IFS='.' read -r -a octets <<< "$IP_TO_ADD"
+for octet in "${octets[@]}"; do
+    if ((octet < 0 || octet > 255)); then
+        echo "$ADD_INVALID_IP_RANGE"
+        exit 1
+    fi
+done
 
 # Path to firewall configuration files
 FIREWALL_DIR="/usr/syno/etc/firewall.d"
