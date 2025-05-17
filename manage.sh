@@ -13,22 +13,12 @@ NC='\033[0m' # No Color
 # Path to the directory containing the scripts
 SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
 
-# Load the configuration
-if [ -f "$SCRIPT_DIR/config.sh" ]; then
-    source "$SCRIPT_DIR/config.sh"
+# Load the .env file
+if [ -f "$SCRIPT_DIR/.env" ]; then
+    export $(grep -v '^#' "$SCRIPT_DIR/.env" | xargs)
 else
-    # Default language if config doesn't exist
-    LANG="en"
-    # Create a default config file
-    echo '#!/bin/bash
-# Configuration file
-
-# Language setting (fr or en)
-LANG="en"
-
-# Other configuration parameters can go here
-' > "$SCRIPT_DIR/config.sh"
-    chmod +x "$SCRIPT_DIR/config.sh"
+    echo "Error: .env file not found. Please create one based on .env.dist."
+    exit 1
 fi
 
 # Load the appropriate language file
