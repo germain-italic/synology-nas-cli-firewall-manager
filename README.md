@@ -185,7 +185,7 @@ Every firewall config change is backed up with a timestamp. If something fails, 
 
 ## 🧾 IP Change History
 
-The script now stores IP history in a more permanent location:
+The script stores IP history in a permanent location that won't be wiped on reboot:
 ```bash
 /volume1/homes/YourUser/firewall_history/
 ```
@@ -195,10 +195,6 @@ Each hostname has its own history file named after the hostname (with dots repla
 /volume1/homes/YourUser/firewall_history/myhome_ddns_net.history
 /volume1/homes/YourUser/firewall_history/myoffice_ddns_net.history
 ```
-
-This approach solves two problems:
-1. Each hostname now has its own independent history
-2. Files are stored in a permanent location that won't be wiped on reboot
 
 To reset tracking for a specific hostname, simply delete its corresponding history file.
 
