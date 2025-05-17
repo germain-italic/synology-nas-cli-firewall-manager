@@ -263,14 +263,38 @@ update_scripts() {
         echo -e "Répertoire de scripts: ${GREEN}$SCRIPT_DIR${NC}"
         echo -e "Exécution de 'git pull' pour mettre à jour les scripts..."
         
+        # Vérifier l'état avant le pull
+        BEFORE_PULL=$(git rev-parse HEAD)
+        
         # Exécuter git pull
         if git pull; then
-            echo -e "${GREEN}Scripts mis à jour avec succès!${NC}"
+            # Vérifier l'état après le pull
+            AFTER_PULL=$(git rev-parse HEAD)
             
-            # Rendre tous les scripts exécutables
-            echo -e "Mise à jour des permissions..."
-            chmod +x *.sh
-            echo -e "${GREEN}Permissions mises à jour.${NC}"
+            # Vérifier si des mises à jour ont été appliquées
+            if [ "$BEFORE_PULL" != "$AFTER_PULL" ]; then
+                echo -e "${GREEN}Scripts mis à jour avec succès!${NC}"
+                
+                # Rendre tous les scripts exécutables
+                echo -e "Mise à jour des permissions..."
+                chmod +x *.sh
+                echo -e "${GREEN}Permissions mises à jour.${NC}"
+                
+                echo -e "${YELLOW}Des mises à jour ont été appliquées. Redémarrage du script...${NC}"
+                
+                # Retourner au répertoire d'origine
+                cd "$CURRENT_DIR"
+                
+                echo
+                echo -e "Appuyez sur Entrée pour redémarrer le script..."
+                read
+                
+                # Relancer le script
+                exec "$SCRIPT_DIR/manage.sh"
+                # La commande exec remplace le processus actuel, donc le code après cette ligne ne sera pas exécuté
+            else
+                echo -e "${GREEN}Aucune mise à jour disponible. Vous utilisez déjà la dernière version.${NC}"
+            fi
         else
             echo -e "${RED}Erreur lors de la mise à jour des scripts.${NC}"
         fi
@@ -282,7 +306,7 @@ update_scripts() {
         echo -e "${YELLOW}Si ce n'est pas le cas, vous devrez mettre à jour les scripts manuellement.${NC}"
     fi
     
-    # Retourner au répertoire d'origine
+    # Retourner au répertoire d'origine (seulement si exec n'a pas été appelé)
     cd "$CURRENT_DIR"
     
     echo
