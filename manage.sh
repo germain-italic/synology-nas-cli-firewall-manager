@@ -13,6 +13,26 @@ NC='\033[0m' # No Color
 # Path to the directory containing the scripts
 SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
 
+# Check privileges
+if [ "$EUID" -ne 0 ]; then
+    echo "Please run as root."
+    exit 1
+fi
+
+# Check required commands
+for cmd in jq iptables; do
+    if ! command -v "$cmd" &>/dev/null; then
+        echo "Error: $cmd is not installed."
+        exit 1
+    fi
+done
+
+# Check if synofirewall exists
+if [ ! -x "/usr/syno/bin/synofirewall" ]; then
+    echo "Error: /usr/syno/bin/synofirewall does not exist or is not executable."
+    exit 1
+fi
+
 # Load the .env file
 if [ ! -f "$SCRIPT_DIR/.env" ]; then
     # Create a default .env file
