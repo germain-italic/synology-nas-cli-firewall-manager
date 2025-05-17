@@ -121,6 +121,7 @@ show_menu() {
     echo -e "${GREEN}7.${NC} Activer/Désactiver le firewall"
     echo -e "${GREEN}8.${NC} Recharger la configuration du firewall"
     echo -e "${GREEN}9.${NC} Nettoyer les fichiers de sauvegarde"
+    echo -e "${GREEN}10.${NC} Mettre à jour les scripts (git pull)"
     echo
     echo -e "${RED}0.${NC} Quitter"
     echo
@@ -237,6 +238,47 @@ clean_backups() {
     read
 }
 
+# Fonction pour mettre à jour les scripts via git pull
+update_scripts() {
+    echo
+    echo -e "${YELLOW}=== MISE À JOUR DES SCRIPTS ===${NC}"
+    
+    # Vérifier si le répertoire est un dépôt git
+    if [ -d "$SCRIPT_DIR/.git" ]; then
+        echo -e "Répertoire de scripts: ${GREEN}$SCRIPT_DIR${NC}"
+        echo -e "Exécution de 'git pull' pour mettre à jour les scripts..."
+        
+        # Sauvegarde du répertoire courant
+        CURRENT_DIR=$(pwd)
+        
+        # Aller dans le répertoire des scripts
+        cd "$SCRIPT_DIR"
+        
+        # Exécuter git pull
+        if git pull; then
+            echo -e "${GREEN}Scripts mis à jour avec succès!${NC}"
+            
+            # Rendre tous les scripts exécutables
+            echo -e "Mise à jour des permissions..."
+            chmod +x *.sh
+            echo -e "${GREEN}Permissions mises à jour.${NC}"
+        else
+            echo -e "${RED}Erreur lors de la mise à jour des scripts.${NC}"
+        fi
+        
+        # Retourner au répertoire d'origine
+        cd "$CURRENT_DIR"
+    else
+        echo -e "${RED}Le répertoire n'est pas un dépôt git.${NC}"
+        echo -e "${YELLOW}Pour utiliser cette fonction, le répertoire contenant les scripts doit être cloné depuis un dépôt git.${NC}"
+        echo -e "${YELLOW}Si ce n'est pas le cas, vous devrez mettre à jour les scripts manuellement.${NC}"
+    fi
+    
+    echo
+    echo -e "Appuyez sur Entrée pour continuer..."
+    read
+}
+
 # Vérifier les scripts requis
 check_required_scripts
 
@@ -291,6 +333,9 @@ while true; do
             ;;
         9)
             clean_backups
+            ;;
+        10)
+            update_scripts
             ;;
         *)
             echo -e "${RED}Choix invalide. Veuillez réessayer.${NC}"
