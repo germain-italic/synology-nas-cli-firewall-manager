@@ -99,6 +99,7 @@ REMOVE_VERIFY_FAIL="ATTENTION: Le nom de règle est toujours présent dans le fi
 REMOVE_VERIFY_SUCCESS="Vérification réussie: le nom de règle a bien été supprimé du fichier de configuration"
 REMOVE_IP_VERIFY_FAIL="ATTENTION: L'IP est toujours présente dans les règles iptables"
 REMOVE_IP_VERIFY_SUCCESS="Vérification réussie: les règles iptables ont été correctement mises à jour"
+REMOVE_EMPTY_RULE_NAME="Erreur : Le nom de la règle ne peut pas être vide."
 
 # list_firewall_rules.sh
 LIST_ACTIVE_PROFILE="Profil actif"

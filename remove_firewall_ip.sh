@@ -36,6 +36,12 @@ fi
 # Rule name to remove (can be a hostname or an IP address)
 RULE_NAME="$1"
 
+# Prevent removal of rules with an empty name
+if [ -z "$RULE_NAME" ]; then
+    echo "$REMOVE_EMPTY_RULE_NAME"
+    exit 1
+fi
+
 # Path to firewall configuration files
 FIREWALL_DIR="/usr/syno/etc/firewall.d"
 

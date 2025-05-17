@@ -98,6 +98,7 @@ REMOVE_VERIFY_FAIL="WARNING: The rule name is still present in the configuration
 REMOVE_VERIFY_SUCCESS="Verification successful: the rule name has been removed from the configuration file"
 REMOVE_IP_VERIFY_FAIL="WARNING: The IP is still present in iptables rules"
 REMOVE_IP_VERIFY_SUCCESS="Verification successful: iptables rules have been correctly updated"
+REMOVE_EMPTY_RULE_NAME="Error: Rule name cannot be empty."
 
 # list_firewall_rules.sh
 LIST_ACTIVE_PROFILE="Active profile"
