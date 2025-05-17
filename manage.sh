@@ -123,7 +123,7 @@ show_menu() {
     echo -e "${GREEN}9.${NC} Nettoyer les fichiers de sauvegarde"
     echo -e "${GREEN}10.${NC} Mettre à jour les scripts (git pull)"
     echo
-    echo -e "${RED}0.${NC} Quitter"
+    echo -e "${RED}q/Q.${NC} Quitter"
     echo
     echo -n "Votre choix: "
 }
@@ -299,6 +299,10 @@ while true; do
     read choice
     
     case "$choice" in
+        q|Q)
+            echo -e "${GREEN}Au revoir!${NC}"
+            exit 0
+            ;;
         0)
             echo -e "${GREEN}Au revoir!${NC}"
             exit 0
