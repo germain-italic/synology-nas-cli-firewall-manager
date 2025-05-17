@@ -48,8 +48,6 @@ The easiest way to use these tools is through the main menu interface:
 ./manage.sh
 ```
 
-![Firewall Manager GUI](screenshots/q1D882Yzbk.png)
-
 This interactive menu provides access to all firewall management functions:
 
 - List firewall rules
@@ -138,7 +136,7 @@ You can run `update_hostname_ip.sh` and `rotate_logs_ip.sh` automatically using 
      ```
 6. Repeat steps for `rotate_logs_ip.sh`, if desired.
 
-## Screenshots
+## GUI Screenshots
 
 - [Task scheduler](screenshots/chrome_WnCAkr6PxU.png)
 - [Update DDNS - General](screenshots/chrome_d9BmIjVpfx.png)
@@ -146,7 +144,6 @@ You can run `update_hostname_ip.sh` and `rotate_logs_ip.sh` automatically using 
 - [Update DDNS - Task](screenshots/chrome_rvF9eaVECz.png)
 - [Rotate logs - Schedule](screenshots/chrome_8nY67MK55r.png)
 - [Rotate logs - Task](screenshots/chrome_NKUCBflL0W.png)
-- [Firewall Manager GUI](screenshots/q1D882Yzbk.png)
 
 ---
 
@@ -188,7 +185,22 @@ Every firewall config change is backed up with a timestamp. If something fails, 
 
 ## 🧾 IP Change History
 
-The file `/tmp/home_ip_history.txt` tracks IP changes for the monitored hostname. Delete it to reset tracking.
+The script now stores IP history in a more permanent location:
+```bash
+/volume1/homes/YourUser/firewall_history/
+```
+
+Each hostname has its own history file named after the hostname (with dots replaced by underscores):
+```bash
+/volume1/homes/YourUser/firewall_history/myhome_ddns_net.history
+/volume1/homes/YourUser/firewall_history/myoffice_ddns_net.history
+```
+
+This approach solves two problems:
+1. Each hostname now has its own independent history
+2. Files are stored in a permanent location that won't be wiped on reboot
+
+To reset tracking for a specific hostname, simply delete its corresponding history file.
 
 ---
 
