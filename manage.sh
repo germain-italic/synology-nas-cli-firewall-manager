@@ -26,18 +26,24 @@ show_header() {
 show_firewall_status() {
     echo -e "${YELLOW}=== STATUT ACTUEL DU FIREWALL ===${NC}"
     
-    # Vérifier si le firewall est activé
-    if /usr/syno/bin/synofirewall --status | grep -q "enabled"; then
+    # Vérifier si le firewall est activé - méthode améliorée
+    if sudo iptables -S | grep -q "INPUT_FIREWALL\|FORWARD_FIREWALL"; then
         echo -e "État du firewall: ${GREEN}ACTIVÉ${NC}"
     else
         echo -e "État du firewall: ${RED}DÉSACTIVÉ${NC}"
     fi
     
-    # Trouver le profil actif
+    # Vérifier le statut dans le fichier de configuration
     FIREWALL_DIR="/usr/syno/etc/firewall.d"
     SETTINGS_FILE="$FIREWALL_DIR/firewall_settings.json"
     
     if [ -f "$SETTINGS_FILE" ]; then
+        if grep -q '"status"[[:space:]]*:[[:space:]]*true' "$SETTINGS_FILE"; then
+            echo -e "État dans la configuration: ${GREEN}ACTIVÉ${NC}"
+        else
+            echo -e "État dans la configuration: ${RED}DÉSACTIVÉ${NC}"
+        fi
+        
         PROFILE_NAME=$(grep -o '"profile"[[:space:]]*:[[:space:]]*"[^"]*"' "$SETTINGS_FILE" | sed -E 's/"profile"[[:space:]]*:[[:space:]]*"([^"]*)"/\1/')
         echo -e "Profil actif: ${GREEN}$PROFILE_NAME${NC}"
         
@@ -67,6 +73,10 @@ show_firewall_status() {
     else
         echo -e "Profil actif: ${RED}Introuvable${NC}"
     fi
+    
+    # Afficher le nombre d'IPs autorisées dans iptables
+    IP_COUNT=$(sudo iptables -S INPUT_FIREWALL | grep -c " -s .* -j RETURN")
+    echo -e "IPs autorisées dans iptables: ${GREEN}$IP_COUNT${NC}"
     
     echo
 }
@@ -177,7 +187,7 @@ show_iptables() {
 # Fonction pour activer/désactiver le firewall
 toggle_firewall() {
     echo
-    if /usr/syno/bin/synofirewall --status | grep -q "enabled"; then
+    if sudo iptables -S | grep -q "INPUT_FIREWALL\|FORWARD_FIREWALL"; then
         echo -e "${YELLOW}Le firewall est actuellement ACTIVÉ. Voulez-vous le désactiver? (o/N)${NC}"
         read -p "" confirm
         if [[ "$confirm" =~ ^[oO][uU]?[iI]?$ ]]; then
