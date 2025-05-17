@@ -40,8 +40,6 @@ chmod +x "$SCRIPT_DIR/add_firewall_ip.sh" "$SCRIPT_DIR/remove_firewall_ip.sh"
 echo "Résolution du hostname $HOSTNAME..."
 CURRENT_IP=""
 
-# [Le reste du code de résolution DNS reste inchangé...]
-
 # Créer le fichier d'historique s'il n'existe pas
 if [ ! -f "$IP_HISTORY_FILE" ]; then
     echo "Création du fichier d'historique pour $HOSTNAME..."
