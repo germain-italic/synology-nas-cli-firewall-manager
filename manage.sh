@@ -141,11 +141,11 @@ change_language() {
     
     case "$lang_choice" in
         1)
-            sed -i 's/LANG=.*/LANG="en"/' "$SCRIPT_DIR/config.sh"
+            sed -i 's/^LANG=.*/LANG="en"/' "$SCRIPT_DIR/.env"
             echo "$MANAGE_LANG_ENGLISH"
             ;;
         2)
-            sed -i 's/LANG=.*/LANG="fr"/' "$SCRIPT_DIR/config.sh"
+            sed -i 's/^LANG=.*/LANG="fr"/' "$SCRIPT_DIR/.env"
             echo "$MANAGE_LANG_FRENCH"
             ;;
         *)
