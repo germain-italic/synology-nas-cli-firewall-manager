@@ -177,17 +177,19 @@ show_menu() {
     echo -e "${YELLOW}=== $TITLE_AVAILABLE_ACTIONS ===${NC}"
     echo -e "${GREEN}1.${NC} $MENU_LIST_RULES"
     echo -e "${GREEN}2.${NC} $MENU_ADD_IP"
-    echo -e "${GREEN}3.${NC} $MENU_REMOVE_RULE"
     echo -e "${GREEN}4.${NC} $MENU_UPDATE_NAME"
     echo -e "${GREEN}5.${NC} $MENU_UPDATE_HOSTNAME"
+    echo -e "${GREEN}3.${NC} $MENU_REMOVE_RULE"
     echo
     echo -e "${YELLOW}=== $TITLE_ADVANCED_ACTIONS ===${NC}"
     echo -e "${GREEN}6.${NC} $MENU_SHOW_IPTABLES"
     echo -e "${GREEN}7.${NC} $MENU_TOGGLE_FIREWALL"
     echo -e "${GREEN}8.${NC} $MENU_RELOAD_CONFIG"
     echo -e "${GREEN}9.${NC} $MENU_CLEAN_BACKUPS"
-    echo -e "${GREEN}10.${NC} $MENU_UPDATE_SCRIPTS"
-    echo -e "${GREEN}11.${NC} $MENU_CHANGE_LANGUAGE"
+    echo
+    echo -e "${YELLOW}=== $TITLE_SETTINGS ===${NC}"
+    echo -e "${GREEN}u/U.${NC} $MENU_UPDATE_SCRIPTS"
+    echo -e "${GREEN}l/L.${NC} $MENU_CHANGE_LANGUAGE"
     echo
     echo -e "${RED}q/Q.${NC} $MENU_EXIT"
     echo
@@ -372,10 +374,6 @@ while true; do
             echo -e "${GREEN}$MANAGE_GOODBYE${NC}"
             exit 0
             ;;
-        0)
-            echo -e "${GREEN}$MANAGE_GOODBYE${NC}"
-            exit 0
-            ;;
         1)
             list_firewall_rules
             echo
@@ -418,10 +416,10 @@ while true; do
         9)
             clean_backups
             ;;
-        10)
+        u|U)
             update_scripts
             ;;
-        11)
+        l|L)
             change_language
             ;;
         *)
