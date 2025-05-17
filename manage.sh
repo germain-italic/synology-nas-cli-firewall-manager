@@ -14,12 +14,22 @@ NC='\033[0m' # No Color
 SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
 
 # Load the .env file
-if [ -f "$SCRIPT_DIR/.env" ]; then
-    export $(grep -v '^#' "$SCRIPT_DIR/.env" | xargs)
+if [ ! -f "$SCRIPT_DIR/.env" ]; then
+    # Create a default .env file
+    cat <<EOL > "$SCRIPT_DIR/.env"
+# Default configuration for Synology CLI Firewall Manager
+
+# Language setting (en or fr)
+LANG="en"
+EOL
+
+    echo -e "${YELLOW}A default .env file has been created at $SCRIPT_DIR/.env.${NC}"
+    echo -e "${YELLOW}You can edit this file to change the language (LANG=fr for French).${NC}"
+    echo -e "${YELLOW}The script will now reload to apply the default settings.${NC}"
+    sleep 2
+    exec "$0"  # Restart the script
 else
-    echo "Error: .env file not found. Please create one based on .env.dist by running:"
-    echo "cp .env.dist .env"
-    exit 1
+    export $(grep -v '^#' "$SCRIPT_DIR/.env" | xargs)
 fi
 
 # Load the appropriate language file
