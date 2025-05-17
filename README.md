@@ -18,11 +18,11 @@ The scripts now include multilingual support (English/French):
 
 - `lang/en.sh`: English language strings
 - `lang/fr.sh`: French language strings
-- `config.sh`: Configuration file to select language
+- `.env`: Configuration file to select language (not committed, created from .env.dist on first start)
 
 To change the language, you can:
 1. Edit `config.sh` and change `LANG="fr"` to `LANG="en"` (or vice versa)
-2. Use option 11 in the main menu of `manage.sh`
+2. Use option l/L (lower or upper key "L") in the main menu of `manage.sh`
 
 ## ⚙️ Requirements
 
@@ -35,13 +35,10 @@ To change the language, you can:
 1. Copy all scripts into a directory on your NAS:
 
 ```bash
-/volume1/homes/YourUser/scripts/cli-tools/synology/
+git clone git@github.com:germain-italic/synology-nas-cli-firewall-manager.git
 ```
 
-2. Edit `config.sh` and change `LANG="fr"` to `LANG="en"` (or vice versa)
-
-
-3. Run the main menu interface:
+2. Run the main menu interface:
 
 ```bash
 ./manage.sh
@@ -146,7 +143,7 @@ You can run `update_hostname_ip.sh` and `rotate_logs_ip.sh` automatically using 
      ```
 6. Repeat steps for `rotate_logs_ip.sh`, if desired.
 
-## GUI Screenshots
+#### DSM screenshots 
 
 - [Task scheduler](screenshots/chrome_WnCAkr6PxU.png)
 - [Update DDNS - General](screenshots/chrome_d9BmIjVpfx.png)
@@ -157,7 +154,7 @@ You can run `update_hostname_ip.sh` and `rotate_logs_ip.sh` automatically using 
 
 ## 🔐 Safety & Implementation Details
 
-### How the Scripts Work Internally
+### How the scripts work internally
 
 These scripts follow best practices for modifying the Synology firewall configuration:
 
