@@ -1,56 +1,77 @@
 #!/bin/bash
 
-# Ce script ajoute une IP à la whitelist du firewall Synology DSM 7.x
-# Usage: ./add_firewall_ip.sh <adresse_ip> [hostname]
-# Si hostname n'est pas fourni, l'adresse IP sera utilisée comme nom
+# This script adds an IP address to the Synology DSM 7.x firewall whitelist
+# Usage: ./add_firewall_ip.sh <ip_address> [hostname]
+# If no hostname is provided, the IP address is used as the rule name
 
-# Vérifier si au moins une adresse IP a été fournie
+# Load configuration and language files
+SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
+
+if [ -f "$SCRIPT_DIR/config.sh" ]; then
+    source "$SCRIPT_DIR/config.sh"
+else
+    # Default language if config doesn't exist
+    LANG="en"
+fi
+
+# Load the appropriate language file
+if [ "$LANG" = "en" ]; then
+    if [ -f "$SCRIPT_DIR/lang/en.sh" ]; then
+        source "$SCRIPT_DIR/lang/en.sh"
+    fi
+else
+    if [ -f "$SCRIPT_DIR/lang/fr.sh" ]; then
+        source "$SCRIPT_DIR/lang/fr.sh"
+    fi
+fi
+
+# Check if at least one IP address was provided
 if [ $# -lt 1 ]; then
-    echo "Usage: $0 <adresse_ip> [hostname]"
-    echo "Exemple: $0 192.168.1.100 maison.ddns.net"
+    echo "$ADD_USAGE"
+    echo "$ADD_EXAMPLE"
     exit 1
 fi
 
-# Adresse IP à ajouter
+# IP address to add
 IP_TO_ADD="$1"
 
-# Utiliser le hostname fourni ou par défaut l'adresse IP comme nom
+# Use provided hostname or default to the IP address as the rule name
 if [ $# -gt 1 ]; then
     RULE_NAME="$2"
 else
     RULE_NAME="$IP_TO_ADD"
-    echo "Aucun hostname fourni, utilisation de l'adresse IP comme nom de la règle"
+    echo "$ADD_NO_HOSTNAME"
 fi
 
-# Vérifier le format de l'IP (validation basique)
+# Check IP format (basic validation)
 if ! [[ $IP_TO_ADD =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]]; then
-    echo "Erreur: Format d'adresse IP invalide"
+    echo "$ADD_INVALID_IP"
     exit 1
 fi
 
-# Chemin vers les fichiers de configuration du firewall
+# Path to firewall configuration files
 FIREWALL_DIR="/usr/syno/etc/firewall.d"
 
-# Obtenir le profil actif
+# Get the active profile
 SETTINGS_FILE="$FIREWALL_DIR/firewall_settings.json"
 if [ ! -f "$SETTINGS_FILE" ]; then
-    echo "Erreur: Fichier de paramètres du firewall introuvable"
+    echo "$ADD_ERROR_SETTINGS"
     exit 1
 fi
 
-# Déterminer le profil actif
+# Determine the active profile
 PROFILE_NAME=$(grep -o '"profile"[[:space:]]*:[[:space:]]*"[^"]*"' "$SETTINGS_FILE" | sed -E 's/"profile"[[:space:]]*:[[:space:]]*"([^"]*)"/\1/')
-echo "Profil actif: $PROFILE_NAME"
+echo "$ADD_ACTIVE_PROFILE: $PROFILE_NAME"
 
-# Trouver le fichier de profil contenant le nom du profil actif
+# Find the profile file containing the active profile name
 PROFILE_FILE=""
 for f in "$FIREWALL_DIR"/*.json; do
-    # Ignorer le fichier de settings et les backups
+    # Ignore settings file and backups
     if [ "$f" = "$SETTINGS_FILE" ] || [[ "$f" == *".backup."* ]]; then
         continue
     fi
     
-    # Vérifier si ce fichier contient le nom du profil actif
+    # Check if this file contains the active profile name
     if grep -q "\"name\"[[:space:]]*:[[:space:]]*\"$PROFILE_NAME\"" "$f"; then
         PROFILE_FILE="$f"
         break
@@ -58,51 +79,51 @@ for f in "$FIREWALL_DIR"/*.json; do
 done
 
 if [ -z "$PROFILE_FILE" ] || [ ! -f "$PROFILE_FILE" ]; then
-    echo "Erreur: Fichier de profil introuvable"
+    echo "$ADD_ERROR_PROFILE"
     exit 1
 fi
 
-echo "Fichier de profil à modifier: $PROFILE_FILE"
+echo "$ADD_PROFILE_MODIFY: $PROFILE_FILE"
 
-# Faire une sauvegarde du fichier
+# Make a backup of the file
 BACKUP_FILE="${PROFILE_FILE}.backup.$(date +%Y%m%d%H%M%S)"
 cp "$PROFILE_FILE" "$BACKUP_FILE"
-echo "Sauvegarde créée: $BACKUP_FILE"
+echo "$ADD_BACKUP_CREATED: $BACKUP_FILE"
 
-# Vérifier si le nom de règle existe déjà dans le fichier
+# Check if rule name already exists in the file
 if grep -q "\"name\"[[:space:]]*:[[:space:]]*\"$RULE_NAME\"" "$PROFILE_FILE"; then
-    echo "Une règle avec le nom $RULE_NAME existe déjà"
-    echo "Utilisez remove_firewall_ip.sh pour supprimer la règle existante d'abord"
+    echo "$(printf "$ADD_RULE_EXISTS" "$RULE_NAME")"
+    echo "$ADD_USE_REMOVE"
     exit 0
 fi
 
-# Vérifier si l'IP existe déjà dans les règles iptables
+# Check if the IP already exists in iptables rules
 if iptables -S | grep -q "$IP_TO_ADD"; then
-    echo "INFO: L'adresse IP $IP_TO_ADD est déjà présente dans les règles iptables"
+    echo "$(printf "$ADD_IP_EXISTS" "$IP_TO_ADD")"
 fi
 
-# Vérifier la structure du JSON et identifier l'index de la règle deny
+# Check the JSON structure and identify the deny rule index
 if command -v jq >/dev/null 2>&1; then
-    # Vérifier si le fichier est un JSON valide
+    # Check if the file is valid JSON
     if ! jq empty "$PROFILE_FILE" 2>/dev/null; then
-        echo "Erreur: Le fichier de profil n'est pas un JSON valide"
+        echo "$ADD_ERROR_JSON"
         exit 1
     fi
     
-    # Trouver l'index de la règle deny (policy=1)
+    # Find the index of the deny rule (policy=1)
     DENY_INDEX=$(jq '.rules.global | map(.policy) | index(1)' "$PROFILE_FILE")
     
     if [ "$DENY_INDEX" = "null" ] || [ -z "$DENY_INDEX" ]; then
-        echo "Aucune règle deny trouvée. La nouvelle règle sera ajoutée à la fin."
+        echo "$ADD_NO_DENY"
         DENY_INDEX=$(jq '.rules.global | length' "$PROFILE_FILE")
     fi
     
-    echo "Position de la règle deny: $DENY_INDEX"
+    echo "$ADD_DENY_POSITION: $DENY_INDEX"
     
-    # Créer un fichier temporaire
+    # Create a temporary file
     TMP_FILE=$(mktemp)
     
-    # Créer la nouvelle règle et l'insérer avant la règle deny
+    # Create the new rule and insert it before the deny rule
     jq --arg ip "$IP_TO_ADD" --arg name "$RULE_NAME" --argjson pos "$DENY_INDEX" '
     .rules.global = .rules.global[0:$pos] + [
       {
@@ -127,44 +148,44 @@ if command -v jq >/dev/null 2>&1; then
     ] + .rules.global[$pos:]
     ' "$PROFILE_FILE" > "$TMP_FILE"
     
-    # Vérifier que le fichier temporaire est valide et non vide
+    # Check that the temporary file is valid and not empty
     if [ -s "$TMP_FILE" ] && jq empty "$TMP_FILE" 2>/dev/null; then
-        echo "Modification réussie, application des changements"
+        echo "$ADD_MOD_SUCCESS"
         cp "$TMP_FILE" "$PROFILE_FILE"
         rm -f "$TMP_FILE"
     else
-        echo "Erreur lors de la modification du fichier JSON"
+        echo "$ADD_ERROR_MODIFY"
         rm -f "$TMP_FILE"
         exit 1
     fi
 else
-    echo "jq n'est pas disponible, impossible d'ajouter la règle correctement"
+    echo "$ADD_JQ_UNAVAILABLE"
     exit 1
 fi
 
-# Recharger le firewall
-echo "Rechargement du firewall..."
+# Reload the firewall
+echo "$ADD_RELOAD"
 if ! /usr/syno/bin/synofirewall --reload; then
-    echo "Erreur lors du rechargement du firewall!"
-    echo "Restauration de la sauvegarde..."
+    echo "$ADD_RELOAD_ERROR"
+    echo "$ADD_RESTORE"
     cp "$BACKUP_FILE" "$PROFILE_FILE"
     /usr/syno/bin/synofirewall --reload
-    echo "Sauvegarde restaurée"
+    echo "$ADD_BACKUP_RESTORED"
     exit 1
 fi
 
-echo "Adresse IP $IP_TO_ADD ajoutée à la whitelist avec le nom $RULE_NAME"
+echo "$(printf "$ADD_IP_ADDED" "$IP_TO_ADD" "$RULE_NAME")"
 
-# Vérifier que l'IP est bien dans les règles iptables
+# Verify that the IP is present in iptables rules
 if iptables -S | grep -q "$IP_TO_ADD"; then
-    echo "Vérification réussie: l'IP est correctement présente dans les règles iptables"
+    echo "$ADD_VERIFY_SUCCESS"
 else
-    echo "ATTENTION: L'IP n'est pas présente dans les règles iptables"
+    echo "$ADD_VERIFY_FAIL"
 fi
 
-# Vérifier que le nom de règle est bien dans le fichier de configuration
+# Verify that the rule name is in the configuration file
 if grep -q "\"name\"[[:space:]]*:[[:space:]]*\"$RULE_NAME\"" "$PROFILE_FILE"; then
-    echo "Vérification réussie: le nom de règle a bien été ajouté au fichier de configuration"
+    echo "$ADD_NAME_SUCCESS"
 else
-    echo "ATTENTION: Le nom de règle ne semble pas être dans le fichier de configuration"
+    echo "$ADD_NAME_FAIL"
 fi

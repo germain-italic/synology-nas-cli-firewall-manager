@@ -1,42 +1,63 @@
 #!/bin/bash
 
-# Ce script supprime une règle du firewall Synology DSM 7.x en se basant sur le nom de la règle
+# This script removes a rule from the Synology DSM 7.x firewall based on the rule name
 # Usage: ./remove_firewall_ip.sh <rule_name>
-# Le rule_name peut être un hostname ou une adresse IP (selon ce qui a été utilisé lors de l'ajout)
+# The rule_name can be a hostname or an IP address (depending on what was used when adding)
 
-# Vérifier si un nom de règle a été fourni
+# Load configuration and language files
+SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
+
+if [ -f "$SCRIPT_DIR/config.sh" ]; then
+    source "$SCRIPT_DIR/config.sh"
+else
+    # Default language if config doesn't exist
+    LANG="en"
+fi
+
+# Load the appropriate language file
+if [ "$LANG" = "en" ]; then
+    if [ -f "$SCRIPT_DIR/lang/en.sh" ]; then
+        source "$SCRIPT_DIR/lang/en.sh"
+    fi
+else
+    if [ -f "$SCRIPT_DIR/lang/fr.sh" ]; then
+        source "$SCRIPT_DIR/lang/fr.sh"
+    fi
+fi
+
+# Check if a rule name was provided
 if [ $# -ne 1 ]; then
-    echo "Usage: $0 <rule_name>"
-    echo "Exemple: $0 maison.ddns.net  OU  $0 192.168.1.100"
+    echo "$REMOVE_USAGE"
+    echo "$REMOVE_EXAMPLE"
     exit 1
 fi
 
-# Nom de la règle à supprimer (peut être un hostname ou une adresse IP)
+# Rule name to remove (can be a hostname or an IP address)
 RULE_NAME="$1"
 
-# Chemin vers les fichiers de configuration du firewall
+# Path to firewall configuration files
 FIREWALL_DIR="/usr/syno/etc/firewall.d"
 
-# Obtenir le profil actif
+# Get the active profile
 SETTINGS_FILE="$FIREWALL_DIR/firewall_settings.json"
 if [ ! -f "$SETTINGS_FILE" ]; then
-    echo "Erreur: Fichier de paramètres du firewall introuvable"
+    echo "$REMOVE_ERROR_SETTINGS"
     exit 1
 fi
 
-# Déterminer le profil actif
+# Determine the active profile
 PROFILE_NAME=$(grep -o '"profile"[[:space:]]*:[[:space:]]*"[^"]*"' "$SETTINGS_FILE" | sed -E 's/"profile"[[:space:]]*:[[:space:]]*"([^"]*)"/\1/')
-echo "Profil actif: $PROFILE_NAME"
+echo "$REMOVE_ACTIVE_PROFILE: $PROFILE_NAME"
 
-# Trouver le fichier de profil contenant le nom du profil actif
+# Find the profile file containing the active profile name
 PROFILE_FILE=""
 for f in "$FIREWALL_DIR"/*.json; do
-    # Ignorer le fichier de settings et les backups
+    # Ignore settings file and backups
     if [ "$f" = "$SETTINGS_FILE" ] || [[ "$f" == *".backup."* ]]; then
         continue
     fi
     
-    # Vérifier si ce fichier contient le nom du profil actif
+    # Check if this file contains the active profile name
     if grep -q "\"name\"[[:space:]]*:[[:space:]]*\"$PROFILE_NAME\"" "$f"; then
         PROFILE_FILE="$f"
         break
@@ -44,49 +65,49 @@ for f in "$FIREWALL_DIR"/*.json; do
 done
 
 if [ -z "$PROFILE_FILE" ] || [ ! -f "$PROFILE_FILE" ]; then
-    echo "Erreur: Fichier de profil introuvable"
+    echo "$REMOVE_ERROR_PROFILE"
     exit 1
 fi
 
-echo "Fichier de profil à modifier: $PROFILE_FILE"
+echo "$REMOVE_PROFILE_MODIFY: $PROFILE_FILE"
 
-# Faire une sauvegarde du fichier
+# Make a backup of the file
 BACKUP_FILE="${PROFILE_FILE}.backup.$(date +%Y%m%d%H%M%S)"
 cp "$PROFILE_FILE" "$BACKUP_FILE"
-echo "Sauvegarde créée: $BACKUP_FILE"
+echo "$REMOVE_BACKUP_CREATED: $BACKUP_FILE"
 
-# Vérifier si le nom de règle existe dans le fichier
+# Check if rule name exists in the file
 if ! grep -q "\"name\"[[:space:]]*:[[:space:]]*\"$RULE_NAME\"" "$PROFILE_FILE"; then
-    echo "Aucune règle avec le nom $RULE_NAME n'a été trouvée"
+    echo "$(printf "$REMOVE_RULE_NOT_FOUND" "$RULE_NAME")"
     
-    # Vérifier si le RULE_NAME est une adresse IP qui pourrait être présente dans les règles iptables
+    # Check if RULE_NAME is an IP address that might be in iptables rules
     if [[ $RULE_NAME =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]]; then
         if iptables -S | grep -q "$RULE_NAME"; then
-            echo "L'adresse IP $RULE_NAME est présente dans les règles iptables, mais pas dans le fichier de configuration"
-            echo "Suppression des règles iptables uniquement..."
+            echo "$(printf "$REMOVE_IP_IPTABLES" "$RULE_NAME")"
+            echo "$REMOVE_IP_REMOVE"
             iptables -t filter -D FORWARD_FIREWALL -s "$RULE_NAME" -j RETURN 2>/dev/null
             iptables -t filter -D INPUT_FIREWALL -s "$RULE_NAME" -j RETURN 2>/dev/null
-            echo "Règles iptables supprimées."
+            echo "$REMOVE_IP_REMOVED"
             exit 0
         fi
     fi
     
-    echo "Aucune action nécessaire."
+    echo "$REMOVE_NO_ACTION"
     exit 0
 fi
 
-# Extraire l'adresse IP associée au nom de règle pour la supprimer des règles iptables
+# Extract the IP address associated with the rule name to remove it from iptables rules
 IP_ADDRESS=""
 if command -v jq >/dev/null 2>&1; then
     IP_ADDRESS=$(jq -r --arg name "$RULE_NAME" '.rules.global[] | select(.name == $name) | .ipList[0]' "$PROFILE_FILE")
     
     if [ -n "$IP_ADDRESS" ]; then
-        echo "Adresse IP associée au nom de règle $RULE_NAME: $IP_ADDRESS"
+        echo "$(printf "$REMOVE_IP_ASSOCIATED" "$RULE_NAME" "$IP_ADDRESS")"
     else
-        echo "Impossible de déterminer l'adresse IP associée au nom de règle $RULE_NAME"
+        echo "$(printf "$REMOVE_IP_UNKNOWN" "$RULE_NAME")"
     fi
     
-    # Supprimer la règle contenant le nom spécifié
+    # Remove the rule with the specified name
     TMP_FILE=$(mktemp)
     
     jq --arg name "$RULE_NAME" '
@@ -95,51 +116,51 @@ if command -v jq >/dev/null 2>&1; then
     ))
     ' "$PROFILE_FILE" > "$TMP_FILE"
     
-    # Vérifier que le fichier temporaire est valide et non vide
+    # Check that the temporary file is valid and not empty
     if [ -s "$TMP_FILE" ] && jq empty "$TMP_FILE" 2>/dev/null; then
-        echo "Modification réussie, application des changements"
+        echo "$REMOVE_MOD_SUCCESS"
         cp "$TMP_FILE" "$PROFILE_FILE"
         rm -f "$TMP_FILE"
     else
-        echo "Erreur lors de la modification du fichier JSON"
+        echo "$REMOVE_ERROR_MODIFY"
         rm -f "$TMP_FILE"
         exit 1
     fi
 else
-    echo "jq n'est pas disponible, impossible de supprimer la règle correctement"
+    echo "$REMOVE_JQ_UNAVAILABLE"
     exit 1
 fi
 
-# Si une adresse IP a été trouvée, la supprimer des règles iptables
+# If an IP address was found, remove it from iptables rules
 if [ -n "$IP_ADDRESS" ]; then
-    echo "Suppression des règles iptables pour $IP_ADDRESS"
+    echo "$(printf "$REMOVE_REMOVE_IPTABLES" "$IP_ADDRESS")"
     iptables -t filter -D FORWARD_FIREWALL -s "$IP_ADDRESS" -j RETURN 2>/dev/null
     iptables -t filter -D INPUT_FIREWALL -s "$IP_ADDRESS" -j RETURN 2>/dev/null
 fi
 
-# Recharger le firewall
-echo "Rechargement du firewall..."
+# Reload the firewall
+echo "$REMOVE_RELOAD"
 if ! /usr/syno/bin/synofirewall --reload; then
-    echo "Erreur lors du rechargement du firewall!"
-    echo "Restauration de la sauvegarde..."
+    echo "$REMOVE_RELOAD_ERROR"
+    echo "$REMOVE_RESTORE"
     cp "$BACKUP_FILE" "$PROFILE_FILE"
     /usr/syno/bin/synofirewall --reload
-    echo "Sauvegarde restaurée"
+    echo "$REMOVE_BACKUP_RESTORED"
     exit 1
 fi
 
-echo "Règle pour $RULE_NAME supprimée avec succès"
+echo "$(printf "$REMOVE_RULE_REMOVED" "$RULE_NAME")"
 
-# Vérifier que le nom de règle a bien été supprimé
+# Verify that the rule name has been removed
 if grep -q "\"name\"[[:space:]]*:[[:space:]]*\"$RULE_NAME\"" "$PROFILE_FILE"; then
-    echo "ATTENTION: Le nom de règle est toujours présent dans le fichier de configuration"
+    echo "$REMOVE_VERIFY_FAIL"
 else
-    echo "Vérification réussie: le nom de règle a bien été supprimé du fichier de configuration"
+    echo "$REMOVE_VERIFY_SUCCESS"
 fi
 
-# Vérifier que l'IP a bien été supprimée des règles iptables, si elle était connue
+# Verify that the IP has been removed from iptables rules, if it was known
 if [ -n "$IP_ADDRESS" ] && iptables -S | grep -q "$IP_ADDRESS"; then
-    echo "ATTENTION: L'IP est toujours présente dans les règles iptables"
+    echo "$REMOVE_IP_VERIFY_FAIL"
 else
-    echo "Vérification réussie: les règles iptables ont été correctement mises à jour"
+    echo "$REMOVE_IP_VERIFY_SUCCESS"
 fi

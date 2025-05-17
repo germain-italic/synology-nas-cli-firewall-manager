@@ -1,10 +1,31 @@
 #!/bin/bash
 
-# Ce script met à jour le champ "name" d'une règle contenant une IP donnée
-# Usage: ./update_firewall_rule_name.sh <IP> <nouveau_nom>
+# This script updates the "name" field of a rule containing a specific IP
+# Usage: ./update_firewall_rule_name.sh <IP> <new_name>
+
+# Load configuration and language files
+SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
+
+if [ -f "$SCRIPT_DIR/config.sh" ]; then
+    source "$SCRIPT_DIR/config.sh"
+else
+    # Default language if config doesn't exist
+    LANG="en"
+fi
+
+# Load the appropriate language file
+if [ "$LANG" = "en" ]; then
+    if [ -f "$SCRIPT_DIR/lang/en.sh" ]; then
+        source "$SCRIPT_DIR/lang/en.sh"
+    fi
+else
+    if [ -f "$SCRIPT_DIR/lang/fr.sh" ]; then
+        source "$SCRIPT_DIR/lang/fr.sh"
+    fi
+fi
 
 if [ "$#" -ne 2 ]; then
-    echo "Usage: $0 <ip_address> <new_name>"
+    echo "$UPDATE_NAME_USAGE"
     exit 1
 fi
 
@@ -15,17 +36,17 @@ FIREWALL_DIR="/usr/syno/etc/firewall.d"
 SETTINGS_FILE="$FIREWALL_DIR/firewall_settings.json"
 
 PROFILE_NAME=$(grep -o '"profile"[[:space:]]*:[[:space:]]*"[^"]*"' "$SETTINGS_FILE" | sed -E 's/.*"([^"]*)"/\1/')
-echo "Profil actif : $PROFILE_NAME"
+echo "$UPDATE_NAME_ACTIVE_PROFILE : $PROFILE_NAME"
 
-# Trouver le fichier de profil contenant le nom du profil actif
+# Find the profile file containing the active profile name
 PROFILE_FILE=""
 for f in "$FIREWALL_DIR"/*.json; do
-    # Ignorer le fichier de settings et les backups
+    # Ignore settings file and backups
     if [ "$f" = "$SETTINGS_FILE" ] || [[ "$f" == *".backup."* ]]; then
         continue
     fi
     
-    # Vérifier si ce fichier contient le nom du profil actif
+    # Check if this file contains the active profile name
     if grep -q "\"name\"[[:space:]]*:[[:space:]]*\"$PROFILE_NAME\"" "$f"; then
         PROFILE_FILE="$f"
         break
@@ -33,18 +54,18 @@ for f in "$FIREWALL_DIR"/*.json; do
 done
 
 if [ ! -f "$PROFILE_FILE" ]; then
-    echo "Erreur : Fichier de profil introuvable"
+    echo "$UPDATE_NAME_ERROR_PROFILE"
     exit 1
 fi
 
-echo "Fichier de profil : $PROFILE_FILE"
+echo "$UPDATE_NAME_PROFILE_FILE : $PROFILE_FILE"
 
-# Sauvegarde
+# Backup
 BACKUP_FILE="${PROFILE_FILE}.backup.$(date +%Y%m%d%H%M%S)"
 cp "$PROFILE_FILE" "$BACKUP_FILE"
-echo "Sauvegarde : $BACKUP_FILE"
+echo "$UPDATE_NAME_BACKUP : $BACKUP_FILE"
 
-# Mise à jour avec jq
+# Update with jq
 TMP_FILE=$(mktemp)
 
 jq --arg ip "$TARGET_IP" --arg name "$NEW_NAME" '
@@ -56,25 +77,24 @@ jq --arg ip "$TARGET_IP" --arg name "$NEW_NAME" '
   end
 )' "$PROFILE_FILE" > "$TMP_FILE"
 
-# Valider le résultat
+# Validate the result
 if [ -s "$TMP_FILE" ] && jq empty "$TMP_FILE" 2>/dev/null; then
     cp "$TMP_FILE" "$PROFILE_FILE"
-    echo "Nom mis à jour pour la règle contenant l'IP $TARGET_IP"
+    echo "$(printf "$UPDATE_NAME_SUCCESS" "$TARGET_IP")"
 else
-    echo "Erreur JSON : restauration de la sauvegarde"
+    echo "$UPDATE_NAME_ERROR_JSON"
     cp "$BACKUP_FILE" "$PROFILE_FILE"
     exit 1
 fi
 
-# Recharger le firewall
+# Reload the firewall
 /usr/syno/bin/synofirewall --reload
 
 rm -f "$TMP_FILE"
 
-# Réafficher les règles
-SCRIPT_DIR="$(dirname "$0")"
+# Show updated rules
 if [ -x "$SCRIPT_DIR/list_firewall_rules.sh" ]; then
     echo
-    echo "Règles mises à jour :"
+    echo "$UPDATE_NAME_UPDATED_RULES"
     "$SCRIPT_DIR/list_firewall_rules.sh"
 fi

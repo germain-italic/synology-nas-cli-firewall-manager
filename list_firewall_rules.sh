@@ -1,21 +1,42 @@
 #!/bin/bash
 
+# Load configuration and language files
+SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
+
+if [ -f "$SCRIPT_DIR/config.sh" ]; then
+    source "$SCRIPT_DIR/config.sh"
+else
+    # Default language if config doesn't exist
+    LANG="en"
+fi
+
+# Load the appropriate language file
+if [ "$LANG" = "en" ]; then
+    if [ -f "$SCRIPT_DIR/lang/en.sh" ]; then
+        source "$SCRIPT_DIR/lang/en.sh"
+    fi
+else
+    if [ -f "$SCRIPT_DIR/lang/fr.sh" ]; then
+        source "$SCRIPT_DIR/lang/fr.sh"
+    fi
+fi
+
 FIREWALL_DIR="/usr/syno/etc/firewall.d"
 SETTINGS_FILE="$FIREWALL_DIR/firewall_settings.json"
 
-# Déterminer le profil actif
+# Determine the active profile
 PROFILE_NAME=$(grep -o '"profile"[[:space:]]*:[[:space:]]*"[^"]*"' "$SETTINGS_FILE" | sed -E 's/"profile"[[:space:]]*:[[:space:]]*"([^"]*)"/\1/')
-echo "Profil actif: $PROFILE_NAME"
+echo "$LIST_ACTIVE_PROFILE: $PROFILE_NAME"
 
-# Trouver le fichier de profil contenant le nom du profil actif
+# Find the profile file containing the active profile name
 PROFILE_FILE=""
 for f in "$FIREWALL_DIR"/*.json; do
-    # Ignorer le fichier de settings
+    # Ignore settings file and backups
     if [ "$f" = "$SETTINGS_FILE" ] || [[ "$f" == *".backup."* ]]; then
         continue
     fi
     
-    # Vérifier si ce fichier contient le nom du profil actif
+    # Check if this file contains the active profile name
     if grep -q "\"name\"[[:space:]]*:[[:space:]]*\"$PROFILE_NAME\"" "$f"; then
         PROFILE_FILE="$f"
         break
@@ -23,11 +44,11 @@ for f in "$FIREWALL_DIR"/*.json; do
 done
 
 if [ -z "$PROFILE_FILE" ]; then
-    echo "Aucun fichier de profil trouvé pour le profil '$PROFILE_NAME'"
+    echo "$(printf "$LIST_NO_PROFILE" "$PROFILE_NAME")"
     exit 1
 fi
 
-echo "Fichier de profil: $PROFILE_FILE"
+echo "$LIST_PROFILE_FILE: $PROFILE_FILE"
 echo "---------------------------------------------------------------------------------------------"
 printf "| %-34s | %-38s | %-7s |\n" "Rule Name" "IP Address(es)" "Enabled"
 echo "---------------------------------------------------------------------------------------------"
@@ -42,10 +63,10 @@ if command -v jq >/dev/null 2>&1; then
         printf "| %-34s | %-38s | %-7s |\n" "$name" "$iplist" "$enabled"
     done
 else
-    echo "jq n'est pas disponible, impossible d'afficher les règles"
+    echo "$LIST_JQ_UNAVAILABLE"
     
-    # Alternative simple si jq n'est pas disponible
-    echo "Contenu brut des règles IP:"
+    # Simple alternative if jq isn't available
+    echo "$LIST_RAW_CONTENT"
     grep -A 20 '"ipList"' "$PROFILE_FILE" | grep -B 20 '"table"' | sed 's/^/  /'
 fi
 
