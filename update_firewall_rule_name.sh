@@ -61,6 +61,18 @@ fi
 
 echo "$UPDATE_NAME_PROFILE_FILE : $PROFILE_FILE"
 
+# Validate that the provided IP address exists in the current profile
+if ! jq --arg ip "$TARGET_IP" '.rules.global[] | select(.ipList | index($ip))' "$PROFILE_FILE" >/dev/null; then
+    echo "$(printf "$UPDATE_NAME_IP_NOT_FOUND" "$TARGET_IP")"
+    exit 1
+fi
+
+# Validate that the new name is not empty
+if [ -z "$NEW_NAME" ]; then
+    echo "$UPDATE_NAME_EMPTY_NAME"
+    exit 1
+fi
+
 # Backup
 BACKUP_FILE="${PROFILE_FILE}.backup.$(date +%Y%m%d%H%M%S)"
 cp "$PROFILE_FILE" "$BACKUP_FILE"

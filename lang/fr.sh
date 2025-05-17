@@ -116,6 +116,8 @@ UPDATE_NAME_BACKUP="Sauvegarde"
 UPDATE_NAME_ERROR_JSON="Erreur JSON : restauration de la sauvegarde"
 UPDATE_NAME_SUCCESS="Nom mis à jour pour la règle contenant l'IP %s"
 UPDATE_NAME_UPDATED_RULES="Règles mises à jour :"
+UPDATE_NAME_IP_NOT_FOUND="Erreur : L'adresse IP '%s' est introuvable dans le profil actuel."
+UPDATE_NAME_EMPTY_NAME="Erreur : Le nouveau nom ne peut pas être vide."
 
 # update_hostname_ip.sh
 UPDATE_HOST_EXECUTION="Exécution du"

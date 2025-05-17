@@ -116,6 +116,8 @@ UPDATE_NAME_BACKUP="Backup"
 UPDATE_NAME_ERROR_JSON="JSON Error: restoring backup"
 UPDATE_NAME_SUCCESS="Name updated for rule containing IP %s"
 UPDATE_NAME_UPDATED_RULES="Updated rules:"
+UPDATE_NAME_IP_NOT_FOUND="Error: The IP address '%s' was not found in the current profile."
+UPDATE_NAME_EMPTY_NAME="Error: The new name cannot be empty."
 
 # update_hostname_ip.sh
 UPDATE_HOST_EXECUTION="Execution on"
