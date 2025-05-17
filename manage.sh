@@ -197,9 +197,9 @@ show_menu() {
     echo -e "${YELLOW}=== $TITLE_AVAILABLE_ACTIONS ===${NC}"
     echo -e "${GREEN}1.${NC} $MENU_LIST_RULES"
     echo -e "${GREEN}2.${NC} $MENU_ADD_IP"
-    echo -e "${GREEN}4.${NC} $MENU_UPDATE_NAME"
-    echo -e "${GREEN}5.${NC} $MENU_UPDATE_HOSTNAME"
-    echo -e "${GREEN}3.${NC} $MENU_REMOVE_RULE"
+    echo -e "${GREEN}3.${NC} $MENU_UPDATE_NAME"
+    echo -e "${GREEN}4.${NC} $MENU_UPDATE_HOSTNAME"
+    echo -e "${GREEN}5.${NC} $MENU_REMOVE_RULE"
     echo
     echo -e "${YELLOW}=== $TITLE_ADVANCED_ACTIONS ===${NC}"
     echo -e "${GREEN}6.${NC} $MENU_SHOW_IPTABLES"
@@ -406,19 +406,19 @@ while true; do
             read
             ;;
         3)
-            remove_rule
-            echo
-            echo -e "$MSG_CONTINUE"
-            read
-            ;;
-        4)
             update_rule_name
             echo
             echo -e "$MSG_CONTINUE"
             read
             ;;
-        5)
+        4)
             update_hostname
+            echo
+            echo -e "$MSG_CONTINUE"
+            read
+            ;;
+        5)
+            remove_rule
             echo
             echo -e "$MSG_CONTINUE"
             read
@@ -438,7 +438,7 @@ while true; do
         u|U)
             update_scripts
             ;;
-        l|L)
+        l/L)
             change_language
             ;;
         *)
