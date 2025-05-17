@@ -17,7 +17,8 @@ SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
 if [ -f "$SCRIPT_DIR/.env" ]; then
     export $(grep -v '^#' "$SCRIPT_DIR/.env" | xargs)
 else
-    echo "Error: .env file not found. Please create one based on .env.dist."
+    echo "Error: .env file not found. Please create one based on .env.dist by running:"
+    echo "cp .env.dist .env"
     exit 1
 fi
 
