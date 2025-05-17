@@ -40,6 +40,40 @@ chmod +x "$SCRIPT_DIR/add_firewall_ip.sh" "$SCRIPT_DIR/remove_firewall_ip.sh"
 echo "Résolution du hostname $HOSTNAME..."
 CURRENT_IP=""
 
+
+# Essayer plusieurs méthodes de résolution DNS
+# 1. Méthode ping (fonctionne sur la plupart des systèmes)
+if [ -z "$CURRENT_IP" ]; then
+    CURRENT_IP=$(ping -c 1 $HOSTNAME 2>/dev/null | grep -oE "\b([0-9]{1,3}\.){3}[0-9]{1,3}\b" | head -1)
+fi
+
+# 2. Méthode host
+if [ -z "$CURRENT_IP" ] && command -v host >/dev/null 2>&1; then
+    CURRENT_IP=$(host $HOSTNAME 2>/dev/null | grep 'has address' | awk '{print $4}')
+fi
+
+# 3. Méthode nslookup
+if [ -z "$CURRENT_IP" ] && command -v nslookup >/dev/null 2>&1; then
+    CURRENT_IP=$(nslookup $HOSTNAME 2>/dev/null | grep -A1 'Name:' | grep 'Address:' | tail -1 | awk '{print $2}')
+fi
+
+# 4. Méthode dig (peu probable sur Synology mais on garde au cas où)
+if [ -z "$CURRENT_IP" ] && command -v dig >/dev/null 2>&1; then
+    CURRENT_IP=$(dig +short $HOSTNAME)
+fi
+
+# 5. Méthode getent (disponible sur certains systèmes Linux)
+if [ -z "$CURRENT_IP" ] && command -v getent >/dev/null 2>&1; then
+    CURRENT_IP=$(getent hosts $HOSTNAME | awk '{print $1}')
+fi
+
+if [ -z "$CURRENT_IP" ]; then
+    echo "Erreur: Impossible de résoudre le hostname $HOSTNAME avec aucune méthode"
+    exit 1
+fi
+
+echo "Adresse IP actuelle pour $HOSTNAME: $CURRENT_IP"
+
 # Créer le fichier d'historique s'il n'existe pas
 if [ ! -f "$IP_HISTORY_FILE" ]; then
     echo "Création du fichier d'historique pour $HOSTNAME..."
