@@ -17,6 +17,7 @@ print_menu() {
   echo "5) Show container IP"
   echo "6) Show container health status"
   echo "7) Open DSM in browser"
+  echo "8) Enable SSH on DSM (via API)"
   echo "0) Exit"
   echo ""
   read -p "Choose an option: " CHOICE
@@ -61,6 +62,14 @@ handle_choice() {
       else
         echo "🔗 Please open this URL in your browser:"
         echo "$DSM_URL"
+      fi
+      ;;
+    8)
+      if [ -x ./enable-ssh.sh ]; then
+        echo "🛰 Running enable-ssh.sh..."
+        ./enable-ssh.sh
+      else
+        echo "⚠️ Script enable-ssh.sh not found or not executable."
       fi
       ;;
     0)

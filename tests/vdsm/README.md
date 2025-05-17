@@ -76,6 +76,35 @@ Once running, DSM is accessible at:
 
 ---
 
+## 🔐 Enabling SSH on DSM
+
+To enable SSH access on your Virtual DSM instance (without using the DSM web interface), you can run:
+
+```
+./enable-ssh.sh
+```
+
+This script uses the DSM API to:
+
+- Log in with your DSM credentials
+- Enable SSH service programmatically
+
+If the script is not yet executable, make it so:
+
+```
+chmod +x enable-ssh.sh
+```
+
+Alternatively, use option `8` in the control menu:
+
+```
+./vdsm-control.sh
+```
+
+You can copy the `.env.dist` file to create your customized `.env` with your DSM credentials.
+
+---
+
 ## 📁 Data Location
 
 All persistent DSM data is stored in:

@@ -17,3 +17,6 @@ data/
 # Node/npm/python cache etc. (just in case)
 node_modules/
 __pycache__/
+
+# Sensitive credentials
+.env
