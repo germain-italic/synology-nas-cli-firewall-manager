@@ -438,7 +438,7 @@ while true; do
         u|U)
             update_scripts
             ;;
-        l/L)
+        l|L)
             change_language
             ;;
         *)
