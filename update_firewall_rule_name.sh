@@ -6,11 +6,12 @@
 # Load configuration and language files
 SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
 
-if [ -f "$SCRIPT_DIR/config.sh" ]; then
-    source "$SCRIPT_DIR/config.sh"
+# Load the .env file
+if [ -f "$SCRIPT_DIR/.env" ]; then
+    export $(grep -v '^#' "$SCRIPT_DIR/.env" | xargs)
 else
-    # Default language if config doesn't exist
-    LANG="en"
+    echo "Error: .env file not found. Please create one based on .env.dist."
+    exit 1
 fi
 
 # Load the appropriate language file
