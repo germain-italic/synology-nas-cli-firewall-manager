@@ -25,8 +25,8 @@ EOL
 
     echo -e "${YELLOW}A default .env file has been created at $SCRIPT_DIR/.env.${NC}"
     echo -e "${YELLOW}You can edit this file to change the language (LANG=fr for French).${NC}"
-    echo -e "${YELLOW}The script will now reload to apply the default settings.${NC}"
-    sleep 2
+    echo -e "${YELLOW}Press Enter to reload the script and apply the default settings.${NC}"
+    read -p ""
     exec "$0"  # Restart the script
 else
     export $(grep -v '^#' "$SCRIPT_DIR/.env" | xargs)
