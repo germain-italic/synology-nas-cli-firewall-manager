@@ -315,7 +315,7 @@ update_scripts() {
         # Check if it's a submodule (git file is a link to ../../.git/modules/...)
         if [ -f .git ] && grep -q "gitdir:" .git; then
             echo -e "$MANAGE_GIT_SUBMODULE_DETECTED"
-            if git pull origin main; then
+            if git pull origin master; then
                 echo -e "${GREEN}$MANAGE_SUBMODULE_UPDATED${NC}"
             else
                 echo -e "${RED}$MANAGE_SUBMODULE_FAILED${NC}"
