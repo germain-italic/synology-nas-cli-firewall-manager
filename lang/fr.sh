@@ -134,6 +134,7 @@ UPDATE_HOST_REMOVING_OLD="Suppression de l'ancienne règle pour %s..."
 UPDATE_HOST_ADDING_NEW="Ajout de la nouvelle IP %s pour %s..."
 UPDATE_HOST_UPDATE_SUCCESS="Mise à jour du pare-feu terminée avec succès"
 UPDATE_HOST_NO_CHANGE="L'adresse IP n'a pas changé, aucune action nécessaire"
+UPDATE_HOST_NO_HOSTNAME="Erreur : Aucun nom d'hôte fourni. Utilisation : ./update_hostname_ip.sh <hostname>"
 
 # rotate_logs_ip.sh
 ROTATE_MAIN_LOG="Rotation du fichier log principal: %s"

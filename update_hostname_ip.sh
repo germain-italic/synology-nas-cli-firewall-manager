@@ -27,8 +27,12 @@ else
 fi
 
 # Configuration
-DEFAULT_HOSTNAME="myhome.ddns.net"
-HOSTNAME=${1:-$DEFAULT_HOSTNAME}  # Use the parameter if provided, otherwise the default value
+if [ -z "$1" ]; then
+    echo "$UPDATE_HOST_NO_HOSTNAME"
+    exit 1
+fi
+
+HOSTNAME="$1"  # Use the provided hostname
 
 # Use a history file specific to each hostname
 # and store it in a more permanent location

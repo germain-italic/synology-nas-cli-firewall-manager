@@ -134,6 +134,7 @@ UPDATE_HOST_REMOVING_OLD="Removing old rule for %s..."
 UPDATE_HOST_ADDING_NEW="Adding new IP %s for %s..."
 UPDATE_HOST_UPDATE_SUCCESS="Firewall update completed successfully"
 UPDATE_HOST_NO_CHANGE="The IP address has not changed, no action needed"
+UPDATE_HOST_NO_HOSTNAME="Error: No hostname provided. Usage: ./update_hostname_ip.sh <hostname>"
 
 # rotate_logs_ip.sh
 ROTATE_MAIN_LOG="Rotating main log file: %s"

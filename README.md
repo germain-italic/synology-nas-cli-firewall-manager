@@ -157,8 +157,6 @@ or
 ./update_hostname_ip.sh myhome.ddns.net
 ```
 
-If no argument is provided, it defaults to `myhome.ddns.net`.
-
 #### Rotate log file
 
 ```bash
