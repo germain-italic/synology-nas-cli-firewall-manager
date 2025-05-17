@@ -1,0 +1,19 @@
+# The default compose file is created by ./install-vdsm.sh
+docker-compose.yml
+
+# Ignore Virtual DSM data and disk images
+data/
+!data/.gitkeep
+
+# Ignore Docker artifacts
+*.log
+*.pid
+
+# Ignore local override or temp files
+*.swp
+*.bak
+*~
+
+# Node/npm/python cache etc. (just in case)
+node_modules/
+__pycache__/
