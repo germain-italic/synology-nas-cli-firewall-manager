@@ -18,6 +18,9 @@ print_menu() {
   echo "6) Show container health status"
   echo "7) Open DSM in browser"
   echo "8) Enable SSH on DSM (via API)"
+  echo "9) Enable home directories on DSM (via API)"
+  echo "10) Send SSH public key to DSM (via ssh-copy-id)"
+  echo "11) Connect to DSM via SSH"
   echo "0) Exit"
   echo ""
   read -p "Choose an option: " CHOICE
@@ -72,10 +75,62 @@ handle_choice() {
         echo "⚠️ Script enable-ssh.sh not found or not executable."
       fi
       ;;
+    9)
+      if [ -x ./enable-homes.sh ]; then
+        echo "🛰 Running enable-homes.sh..."
+        ./enable-homes.sh
+      else
+        echo "⚠️ Script enable-homes.sh not found or not executable."
+      fi
+      ;;
     0)
       echo "👋 Exiting."
       exit 0
       ;;
+
+    10)
+      ENV_FILE=".env"
+      if [[ -f "$ENV_FILE" ]]; then
+        source "$ENV_FILE"
+      fi
+
+      if [[ -z "$DSM_USER" ]]; then
+        read -p "👤 DSM Username: " DSM_USER
+      fi
+
+      if [[ -z "$SSH_KEY_PATH" ]]; then
+        SSH_KEY_PATH="$HOME/.ssh/id_rsa.pub"
+      fi
+
+      if [[ ! -f "$SSH_KEY_PATH" ]]; then
+        echo "❌ SSH public key not found at $SSH_KEY_PATH"
+      else
+        DSM_IP=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' "$CONTAINER_NAME")
+        echo "📤 Sending SSH key ($SSH_KEY_PATH) to $DSM_USER@$DSM_IP ..."
+        ssh-copy-id -i "$SSH_KEY_PATH" "$DSM_USER@$DSM_IP"
+      fi
+      ;;
+
+    11)
+      ENV_FILE=".env"
+      if [[ -f "$ENV_FILE" ]]; then
+        source "$ENV_FILE"
+      fi
+
+      if [[ -z "$DSM_USER" ]]; then
+        read -p "👤 DSM Username: " DSM_USER
+      fi
+
+      DSM_IP=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' "$CONTAINER_NAME")
+
+      if [[ -z "$DSM_IP" ]]; then
+        echo "❌ Could not determine DSM container IP."
+      else
+        echo "📡 Connecting via SSH to $DSM_USER@$DSM_IP ..."
+        ssh "$DSM_USER@$DSM_IP"
+      fi
+      ;;
+
     *)
       echo "❌ Invalid choice."
       ;;
