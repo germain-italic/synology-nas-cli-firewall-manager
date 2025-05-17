@@ -62,7 +62,8 @@ fi
 echo "$UPDATE_NAME_PROFILE_FILE : $PROFILE_FILE"
 
 # Validate that the provided IP address exists in the current profile
-if ! jq --arg ip "$TARGET_IP" '.rules.global[] | select(.ipList | index($ip))' "$PROFILE_FILE" >/dev/null; then
+# Fixed validation to properly check if the IP exists in any rule's ipList
+if ! jq --arg ip "$TARGET_IP" '.rules.global[] | select(.ipList | contains([$ip]) or any(. | contains($ip)))' "$PROFILE_FILE" | grep -q .; then
     echo "$(printf "$UPDATE_NAME_IP_NOT_FOUND" "$TARGET_IP")"
     exit 1
 fi
@@ -83,7 +84,7 @@ TMP_FILE=$(mktemp)
 
 jq --arg ip "$TARGET_IP" --arg name "$NEW_NAME" '
 .rules.global |= map(
-  if (.ipList | index($ip) != null) then
+  if (.ipList | contains([$ip]) or any(. | contains($ip))) then
     .name = $name
   else
     .
