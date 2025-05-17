@@ -57,6 +57,8 @@ The easiest way to use these tools is through the main menu interface:
 ./manage.sh
 ```
 
+![GUI screenshot](screenshots/q1D882Yzbk.png)
+
 This interactive menu provides access to all firewall management functions:
 
 - List firewall rules
