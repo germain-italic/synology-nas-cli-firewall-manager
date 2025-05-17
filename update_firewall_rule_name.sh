@@ -83,7 +83,7 @@ TMP_FILE=$(mktemp)
 
 jq --arg ip "$TARGET_IP" --arg name "$NEW_NAME" '
 .rules.global |= map(
-  if (.ipList | index($ip)) != null then
+  if (.ipList | index($ip) != null) then
     .name = $name
   else
     .
